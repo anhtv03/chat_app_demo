@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:chat_app_demo/constants/style_constants.dart';
-import 'package:chat_app_demo/Page/chat_page.dart';
+import 'package:chat_app_demo/pages/chat_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -22,9 +22,9 @@ class HomeCustomPage extends State<HomePage> {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _headerLogo(),
-              SizedBox(height: screenHeight * 0.05),
+              SizedBox(height: screenHeight * 0.03),
               _searchTextField(),
-_listFriendTitle(),
+              _listFriendTitle(),
               Expanded(child: _listFriend(screenHeight)),
             ],
           ),
@@ -35,7 +35,9 @@ _listFriendTitle(),
 }
 
 Widget _searchTextField() {
+  final TextEditingController searchController = TextEditingController();
   return TextField(
+    controller: searchController,
     decoration: InputDecoration(
       hintText: 'Tìm kiếm',
       hintStyle: StyleConstants.textStyle,
@@ -45,6 +47,12 @@ Widget _searchTextField() {
       border: OutlineInputBorder(
         borderSide: BorderSide.none,
         borderRadius: BorderRadius.circular(16),
+      ),
+      suffixIcon: GestureDetector(
+        onTap: () {
+          searchController.clear();
+        },
+        child: Icon(Icons.close, color: Colors.black),
       ),
     ),
   );
@@ -85,28 +93,29 @@ Widget _listFriend(double screenHeight) {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => ChatPage(id: index + 1),
+                    builder: (context) => ChatPage(friendId: '${index + 2}', myId: '1',),
                   ),
                 );
               },
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 15),
-                child: Row(
-                  mainAxisAlignment: MainAxisAlignment.start,
-                  children: [
-                    StyleConstants.avatarFriend,
-                    Padding(
-                      padding: const EdgeInsets.only(left: 20),
-                      child: Text(
-                        'Bạn ${index + 1}',
-                        style: StyleConstants.textTitleListUser,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
+              child: _detailFriend(index + 2),
             );
           },
+        ),
+      ],
+    ),
+  );
+}
+
+Widget _detailFriend(int index) {
+  return Padding(
+    padding: const EdgeInsets.only(bottom: 15),
+    child: Row(
+      mainAxisAlignment: MainAxisAlignment.start,
+      children: [
+        StyleConstants.avatarFriend,
+        Padding(
+          padding: const EdgeInsets.only(left: 40),
+          child: Text('Bạn $index', style: StyleConstants.textTitleListUser),
         ),
       ],
     ),

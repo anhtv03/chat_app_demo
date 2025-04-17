@@ -26,17 +26,36 @@ class StyleConstants {
     ),
   );
 
-  static const avatarFriend = SizedBox(
+  static var avatarFriend = SizedBox(
     height: 50,
     width: 50,
-    child: CircleAvatar(
-      radius: 50,
-      backgroundColor: Color.fromRGBO(103, 131, 231, 1),
-      backgroundImage: NetworkImage(
-        'https://res.cloudinary.com/djj5gopcs/image/upload/v1744612363/download20230704194701_ult1ta.png', // Replace with your image URL
-      ),
-      // child: Icon(Icons.person, size: 30, color: Colors.white),
+    child: Stack(
+      alignment: Alignment.center,
+      children: [
+        CircleAvatar(
+          radius: 25,
+          backgroundImage: NetworkImage(
+            'https://res.cloudinary.com/djj5gopcs/image/upload/v1744612363/download20230704194701_ult1ta.png', // Replace with your image URL
+          ),
+        ),
+        Positioned(
+          bottom: 0,
+          right: 0,
+          child: SizedBox(
+            height: 10,
+            width: 10,
+            child: Container(
+              decoration: const BoxDecoration(
+                color: Colors.green,
+                shape: BoxShape.circle,
+                border: Border.fromBorderSide(BorderSide(color: Colors.white)),
+              ),
+            ),
+          ),
+        ),
+      ],
     ),
+    // child: Icon(Icons.person, size: 30, color: Colors.white);
   );
 
   static const textStyle = TextStyle(
@@ -73,3 +92,5 @@ class StyleConstants {
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
   );
 }
+
+
