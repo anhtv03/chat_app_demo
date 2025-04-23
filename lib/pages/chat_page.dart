@@ -3,6 +3,7 @@ import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:chat_app_demo/constants/style_constants.dart';
 import 'package:chat_app_demo/models/message.dart';
 import 'package:intl/intl.dart';
+// import 'package:photo_manager/photo_manager.dart';
 
 class ChatPage extends StatefulWidget {
   final String friendId;
@@ -18,6 +19,7 @@ class ChatCustomPage extends State<ChatPage> {
   bool showEmoji = false;
   TextEditingController textEditingController = TextEditingController();
   List<Message> messages = [];
+  String friendID = "", myID = "";
 
   @override
   void initState() {
@@ -27,8 +29,8 @@ class ChatCustomPage extends State<ChatPage> {
   @override
   Widget build(BuildContext context) {
     final double screenHeight = MediaQuery.of(context).size.height;
-    final String friendID = widget.friendId;
-    final String myID = widget.myId;
+    friendID = widget.friendId;
+    myID = widget.myId;
 
     return Scaffold(
       appBar: AppBar(
@@ -198,11 +200,58 @@ class ChatCustomPage extends State<ChatPage> {
               ),
             ),
           ),
-          //============================send message=========================
+          //============================send button=========================
           IconButton(
             icon: Icon(Icons.send, color: Color.fromRGBO(4, 125, 231, 1)),
             onPressed: () {
-              // Handle send button press
+              setState(() {
+                messages.add(
+                  Message(
+                    id: '1',
+                    myId: myID,
+                    friendId: friendID,
+                    files: [],
+                    content: textEditingController.toString(),
+                    images: [],
+                    isSend: 1,
+                    createdAt: DateTime.now(),
+                    messageType: 1,
+                  ),
+                );
+              });
+            },
+          ),
+          //============================file button=========================
+          IconButton(
+            icon: Icon(
+              Icons.file_present,
+              color: Color.fromRGBO(4, 125, 231, 1),
+            ),
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                builder: (BuildContext context) {
+                  return SizedBox(
+                    height: screenHeight * 0.4,
+                    child: Text('data'),
+                  );
+                },
+              );
+            },
+          ),
+          //============================picture button=========================
+          IconButton(
+            icon: Icon(Icons.image, color: Color.fromRGBO(4, 125, 231, 1)),
+            onPressed: () {
+              showModalBottomSheet(
+                context: context,
+                builder: (BuildContext context) {
+                  return SizedBox(
+                    height: screenHeight * 0.4,
+                    child: Text('data'),
+                  );
+                },
+              );
             },
           ),
         ],
