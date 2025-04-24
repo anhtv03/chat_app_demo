@@ -3,7 +3,6 @@ import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:chat_app_demo/constants/style_constants.dart';
 import 'package:chat_app_demo/models/message.dart';
 import 'package:intl/intl.dart';
-// import 'package:photo_manager/photo_manager.dart';
 
 class ChatPage extends StatefulWidget {
   final String friendId;
@@ -16,14 +15,17 @@ class ChatPage extends StatefulWidget {
 }
 
 class ChatCustomPage extends State<ChatPage> {
-  bool showEmoji = false;
   TextEditingController textEditingController = TextEditingController();
+  ScrollController scrollController = ScrollController();
   List<Message> messages = [];
   String friendID = "", myID = "";
 
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scrollToEnd();
+    });
   }
 
   @override
@@ -37,20 +39,17 @@ class ChatCustomPage extends State<ChatPage> {
         backgroundColor: Colors.white,
         title: Row(
           mainAxisAlignment: MainAxisAlignment.start,
-          children: [_headerTitle(friendID)],
+          children: [_headerTitle()],
         ),
       ),
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          _contentMessage(friendID, myID),
-          _buildInput(context, textEditingController, screenHeight),
-        ],
+        children: [_contentMessage(), _buildInput(screenHeight)],
       ),
     );
   }
 
-  Widget _headerTitle(String friendID) {
+  Widget _headerTitle() {
     return Padding(
       padding: EdgeInsets.only(left: 10),
       child: Row(
@@ -80,7 +79,7 @@ class ChatCustomPage extends State<ChatPage> {
     );
   }
 
-  Widget _contentMessage(String friendID, String myID) {
+  Widget _contentMessage() {
     messages =
         getMockMessages()
             .where((mess) => mess.friendId == friendID && mess.myId == myID)
@@ -88,6 +87,7 @@ class ChatCustomPage extends State<ChatPage> {
     return Flexible(
       child: ListView.builder(
         physics: ClampingScrollPhysics(),
+        controller: scrollController,
         itemCount: messages.length,
         itemBuilder: (context, index) {
           final Message message = messages[index];
@@ -159,7 +159,7 @@ class ChatCustomPage extends State<ChatPage> {
     );
   }
 
-  Widget _buildInput(context, textEditingController, screenHeight) {
+  Widget _buildInput(screenHeight) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 0, vertical: 10),
       child: Row(
@@ -177,7 +177,6 @@ class ChatCustomPage extends State<ChatPage> {
                       textEditingController: textEditingController,
                       onBackspacePressed: () {},
                       onEmojiSelected: (category, emoji) {},
-                      config: Config(),
                     ),
                   );
                 },
@@ -204,21 +203,25 @@ class ChatCustomPage extends State<ChatPage> {
           IconButton(
             icon: Icon(Icons.send, color: Color.fromRGBO(4, 125, 231, 1)),
             onPressed: () {
-              setState(() {
-                messages.add(
-                  Message(
-                    id: '1',
-                    myId: myID,
-                    friendId: friendID,
-                    files: [],
-                    content: textEditingController.toString(),
-                    images: [],
-                    isSend: 1,
-                    createdAt: DateTime.now(),
-                    messageType: 1,
-                  ),
-                );
-              });
+              if (textEditingController.text.isNotEmpty) {
+                setState(() {
+                  messages.add(
+                    Message(
+                      id: '1',
+                      myId: myID,
+                      friendId: friendID,
+                      files: [],
+                      content: textEditingController.text,
+                      images: [],
+                      isSend: 1,
+                      createdAt: DateTime.now(),
+                      messageType: 1,
+                    ),
+                  );
+                  textEditingController.clear();
+                  _scrollToEnd();
+                });
+              }
             },
           ),
           //============================file button=========================
@@ -257,6 +260,16 @@ class ChatCustomPage extends State<ChatPage> {
         ],
       ),
     );
+  }
+
+  void _scrollToEnd() {
+    if (scrollController.hasClients) {
+      scrollController.animateTo(
+        scrollController.position.maxScrollExtent,
+        duration: Duration(milliseconds: 300),
+        curve: Curves.easeOutBack,
+      );
+    }
   }
 
   List<Message> getMockMessages() {
