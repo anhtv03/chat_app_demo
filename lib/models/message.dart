@@ -1,5 +1,3 @@
-
-
 class Message {
   final String id;
   final String friendId;
@@ -23,5 +21,31 @@ class Message {
     required this.messageType,
   });
 
+  factory Message.fromJson(Map<String, dynamic> json) {
+    return Message(
+      id: json['id'] as String,
+      myId: json['myId'] as String,
+      friendId: json['friendId'] as String,
+      files: List.from(json['files'] as List),
+      content: json['content'] as String,
+      images: List.from(json['images'] as List),
+      isSend: json['isSend'] as int,
+      createdAt: DateTime.parse(json['createdAt'] as String),
+      messageType: json['messageType'] as int,);
+  }
 
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'myId': myId,
+      'friendId': friendId,
+      'files': files,
+      'content': content,
+      'images': images,
+      'isSend': isSend,
+      'createdAt': createdAt.toIso8601String(),
+      'messageType': messageType,
+    };
+  }
 }
+

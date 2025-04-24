@@ -1,0 +1,68 @@
+[
+  {
+    "id": "1",
+    "myId": "1",
+    "friendId": "2",
+    "files": [],
+    "content": "Xin chào! Lâu rồi không gặp.",
+    "images": [],
+    "isSend": 1,
+    "createdAt": "2025-04-16T09:00:00",
+    "messageType": 1
+  },
+  {
+    "id": "2",
+    "myId": "1",
+    "friendId": "2",
+    "files": [],
+    "content": "Chào bạn! Đúng là lâu rồi thật.",
+    "images": [],
+    "isSend": 1,
+    "createdAt": "2025-04-16T09:00:00",
+    "messageType": 0
+  },
+  {
+    "id": "3",
+    "myId": "1",
+    "friendId": "2",
+    "files": [],
+    "content": "Bạn khỏe không? 😊",
+    "images": [],
+    "isSend": 1,
+    "createdAt": "2025-04-16T09:00:00",
+    "messageType": 1
+  },
+  {
+    "id": "4",
+    "myId": "1",
+    "friendId": "2",
+    "files": [],
+    "content": "Mình cũng khỏe. Cậu dạo này sao rồi?",
+    "images": [],
+    "isSend": 1,
+    "createdAt": "2025-04-16T09:01:00",
+    "messageType": 0
+  },
+  {
+    "id": "5",
+    "myId": "1",
+    "friendId": "3",
+    "files": [],
+    "content": "Ồ, thú vị đấy. Đi đâu vậy?",
+    "images": [],
+    "isSend": 1,
+    "createdAt": "2025-04-16T09:03:00",
+    "messageType": 1
+  },
+  {
+    "id": "6",
+    "myId": "1",
+    "friendId": "3",
+    "files": [],
+    "content": "Mình đi Đà Lạt, đẹp lắm!",
+    "images": [],
+    "isSend": 1,
+    "createdAt": "2025-04-16T09:04:00",
+    "messageType": 0
+  }
+]

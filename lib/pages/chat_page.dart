@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:chat_app_demo/constants/style_constants.dart';
@@ -23,16 +24,25 @@ class ChatCustomPage extends State<ChatPage> {
   @override
   void initState() {
     super.initState();
+    friendID = widget.friendId;
+    myID = widget.myId;
+    _loadMessage();
+
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _scrollToEnd();
     });
   }
 
   @override
+  void dispose() {
+    textEditingController.dispose();
+    scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
     final double screenHeight = MediaQuery.of(context).size.height;
-    friendID = widget.friendId;
-    myID = widget.myId;
 
     return Scaffold(
       appBar: AppBar(
@@ -80,10 +90,6 @@ class ChatCustomPage extends State<ChatPage> {
   }
 
   Widget _contentMessage() {
-    messages =
-        getMockMessages()
-            .where((mess) => mess.friendId == friendID && mess.myId == myID)
-            .toList();
     return Flexible(
       child: ListView.builder(
         physics: ClampingScrollPhysics(),
@@ -175,8 +181,6 @@ class ChatCustomPage extends State<ChatPage> {
                     height: screenHeight * 0.4,
                     child: EmojiPicker(
                       textEditingController: textEditingController,
-                      onBackspacePressed: () {},
-                      onEmojiSelected: (category, emoji) {},
                     ),
                   );
                 },
@@ -207,7 +211,7 @@ class ChatCustomPage extends State<ChatPage> {
                 setState(() {
                   messages.add(
                     Message(
-                      id: '1',
+                      id: (messages.length + 1).toString(),
                       myId: myID,
                       friendId: friendID,
                       files: [],
@@ -226,10 +230,7 @@ class ChatCustomPage extends State<ChatPage> {
           ),
           //============================file button=========================
           IconButton(
-            icon: Icon(
-              Icons.file_present,
-              color: Color.fromRGBO(4, 125, 231, 1),
-            ),
+            icon: Icon(Icons.file_present),
             onPressed: () {
               showModalBottomSheet(
                 context: context,
@@ -244,7 +245,7 @@ class ChatCustomPage extends State<ChatPage> {
           ),
           //============================picture button=========================
           IconButton(
-            icon: Icon(Icons.image, color: Color.fromRGBO(4, 125, 231, 1)),
+            icon: Icon(Icons.image),
             onPressed: () {
               showModalBottomSheet(
                 context: context,
@@ -272,207 +273,27 @@ class ChatCustomPage extends State<ChatPage> {
     }
   }
 
-  List<Message> getMockMessages() {
-    return [
-      Message(
-        id: '1',
-        myId: '1',
-        friendId: '2',
-        files: [],
-        content: "Xin chào! Lâu rồi không gặp.",
-        images: [],
-        isSend: 1,
-        createdAt: DateTime(2025, 4, 16, 9, 0),
-        messageType: 1,
-      ),
-      Message(
-        id: '1',
-        myId: '1',
-        friendId: '2',
-        files: [],
-        content: "Chào bạn! Đúng là lâu rồi thật.",
-        images: [],
-        isSend: 1,
-        createdAt: DateTime(2025, 4, 16, 9, 0),
-        messageType: 0,
-      ),
-      Message(
-        id: '1',
-        myId: '1',
-        friendId: '2',
-        files: [],
-        content: "Bạn khỏe không? 😊",
-        images: [],
-        isSend: 1,
-        createdAt: DateTime(2025, 4, 16, 9, 0),
-        messageType: 1,
-      ),
-      Message(
-        id: '2',
-        myId: '1',
-        friendId: '2',
-        files: [],
-        content: "Mình cũng khỏe. Cậu dạo này sao rồi?",
-        images: [],
-        isSend: 1,
-        createdAt: DateTime(2025, 4, 16, 9, 1),
-        messageType: 0,
-      ),
-      Message(
-        id: '3',
-        myId: '1',
-        friendId: '2',
-        files: [],
-        content: "Tớ vẫn ổn. À, tớ mới đi du lịch về đó.",
-        images: [],
-        isSend: 1,
-        createdAt: DateTime(2025, 4, 16, 9, 2),
-        messageType: 1,
-      ),
-      Message(
-        id: '4',
-        myId: '1',
-        friendId: '2',
-        files: [],
-        content: "Ồ, thú vị đấy. Đi đâu vậy?",
-        images: [],
-        isSend: 1,
-        createdAt: DateTime(2025, 4, 16, 9, 3),
-        messageType: 0,
-      ),
-      Message(
-        id: '4',
-        myId: '1',
-        friendId: '2',
-        files: [],
-        content: "Ồ, thú vị đấy. Đi đâu vậy?",
-        images: [],
-        isSend: 0,
-        createdAt: DateTime(2025, 4, 16, 9, 3),
-        messageType: 1,
-      ),
-      Message(
-        id: '4',
-        myId: '1',
-        friendId: '2',
-        files: [],
-        content: "Ồ, thú vị đấy. Đi đâu vậy?",
-        images: [],
-        isSend: 1,
-        createdAt: DateTime(2025, 4, 16, 9, 3),
-        messageType: 0,
-      ),
-      Message(
-        id: '4',
-        myId: '1',
-        friendId: '2',
-        files: [],
-        content: "Ồ, thú vị đấy. Đi đâu vậy?",
-        images: [],
-        isSend: 1,
-        createdAt: DateTime(2025, 4, 16, 9, 3),
-        messageType: 1,
-      ),
-      Message(
-        id: '4',
-        myId: '1',
-        friendId: '2',
-        files: [],
-        content: "Ồ, thú vị đấy. Đi đâu vậy?",
-        images: [],
-        isSend: 1,
-        createdAt: DateTime(2025, 4, 16, 9, 3),
-        messageType: 0,
-      ),
-      Message(
-        id: '4',
-        myId: '1',
-        friendId: '2',
-        files: [],
-        content: "Ồ, thú vị đấy. Đi đâu vậy?",
-        images: [],
-        isSend: 1,
-        createdAt: DateTime(2025, 4, 16, 9, 3),
-        messageType: 1,
-      ),
-      Message(
-        id: '4',
-        myId: '1',
-        friendId: '2',
-        files: [],
-        content: "Ồ, thú vị đấy. Đi đâu vậy?",
-        images: [],
-        isSend: 1,
-        createdAt: DateTime(2025, 4, 16, 9, 3),
-        messageType: 0,
-      ),
+  Future<void> _loadMessage() async {
+    try {
+      final String jsonString = await DefaultAssetBundle.of(
+        context,
+      ).loadString('assets/messages.txt');
+      final List<dynamic> jsonData = jsonDecode(jsonString) as List<dynamic>;
+      final List<Message> loadedMessages =
+          jsonData
+              .map(
+                (message) => Message.fromJson(message as Map<String, dynamic>),
+              )
+              .toList();
 
-      Message(
-        id: '4',
-        myId: '1',
-        friendId: '3',
-        files: [],
-        content: "Ồ, thú vị đấy. Đi đâu vậy?",
-        images: [],
-        isSend: 1,
-        createdAt: DateTime(2025, 4, 16, 9, 3),
-        messageType: 1,
-      ),
-      Message(
-        id: '4',
-        myId: '1',
-        friendId: '3',
-        files: [],
-        content: "Ồ, thú vị đấy. Đi đâu vậy?",
-        images: [],
-        isSend: 1,
-        createdAt: DateTime(2025, 4, 16, 9, 3),
-        messageType: 0,
-      ),
-      Message(
-        id: '4',
-        myId: '1',
-        friendId: '3',
-        files: [],
-        content: "Ồ, thú vị đấy. Đi đâu vậy?",
-        images: [],
-        isSend: 1,
-        createdAt: DateTime(2025, 4, 16, 9, 3),
-        messageType: 1,
-      ),
-      Message(
-        id: '4',
-        myId: '1',
-        friendId: '3',
-        files: [],
-        content: "Ồ, thú vị đấy. Đi đâu vậy?",
-        images: [],
-        isSend: 1,
-        createdAt: DateTime(2025, 4, 16, 9, 3),
-        messageType: 0,
-      ),
-      Message(
-        id: '4',
-        myId: '1',
-        friendId: '3',
-        files: [],
-        content: "Ồ, thú vị đấy. Đi đâu vậy?",
-        images: [],
-        isSend: 1,
-        createdAt: DateTime(2025, 4, 16, 9, 3),
-        messageType: 1,
-      ),
-      Message(
-        id: '4',
-        myId: '1',
-        friendId: '3',
-        files: [],
-        content: "Ồ, thú vị đấy. Đi đâu vậy?",
-        images: [],
-        isSend: 1,
-        createdAt: DateTime(2025, 4, 16, 9, 3),
-        messageType: 0,
-      ),
-    ];
+      setState(() {
+        messages =
+            loadedMessages
+                .where((mess) => mess.friendId == friendID && mess.myId == myID)
+                .toList();
+      });
+    } catch (e) {
+      print('Error loading messages: $e');
+    }
   }
 }
