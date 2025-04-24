@@ -64,5 +64,38 @@
     "isSend": 1,
     "createdAt": "2025-04-16T09:04:00",
     "messageType": 0
+  },
+  {
+      "id": "7",
+      "myId": "1",
+      "friendId": "2",
+      "files": [],
+      "content": "Tôi có một tin nhắn thật dài để test trường hợp này, thật ra thì dài quá cũng format chuẩn thoi nên là cứ dùng để test vậy",
+      "images": [],
+      "isSend": 1,
+      "createdAt": "2025-04-16T09:00:00",
+      "messageType": 1
+  },
+  {
+      "id": "9",
+      "myId": "1",
+      "friendId": "2",
+      "files": [],
+      "content": "Tôi có một tin nhắn thật dài để test trường hợp này, thật ra thì dài quá cũng format chuẩn thoi nên là cứ dùng để test vậy",
+      "images": [],
+      "isSend": 1,
+      "createdAt": "2025-04-16T09:00:00",
+      "messageType": 0
+  },
+  {
+        "id": "8",
+        "myId": "1",
+        "friendId": "2",
+        "files": [],
+        "content": "Bạn khỏe không nhỉ",
+        "images": [],
+        "isSend": 1,
+        "createdAt": "2025-04-16T09:00:00",
+        "messageType": 0
   }
 ]

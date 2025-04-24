@@ -317,7 +317,7 @@ class ChatCustomPage extends State<ChatPage> {
                 .toList();
       });
     } catch (e) {
-      print('Error loading messages: $e');
+      print('Error loading messages: $e\n');
     }
   }
 }
