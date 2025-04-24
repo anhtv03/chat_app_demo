@@ -92,7 +92,7 @@ class ChatCustomPage extends State<ChatPage> {
   Widget _contentMessage() {
     return Flexible(
       child: ListView.builder(
-        physics: ClampingScrollPhysics(),
+        physics: const ClampingScrollPhysics(),
         controller: scrollController,
         itemCount: messages.length,
         itemBuilder: (context, index) {
@@ -104,54 +104,76 @@ class ChatCustomPage extends State<ChatPage> {
                   message.messageType == 1
                       ? Alignment.centerRight
                       : Alignment.centerLeft,
-              child: Column(
-                crossAxisAlignment:
+              child: Row(
+                mainAxisAlignment:
                     message.messageType == 1
-                        ? CrossAxisAlignment.end
-                        : CrossAxisAlignment.start,
+                        ? MainAxisAlignment.end
+                        : MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  //=====================content message=======================
-                  Container(
-                    padding: const EdgeInsets.all(10),
-                    decoration: BoxDecoration(
-                      color:
-                          message.messageType == 1
-                              ? Color.fromRGBO(32, 160, 144, 1)
-                              : Color.fromRGBO(242, 247, 251, 1),
-                      borderRadius: BorderRadius.only(
-                        bottomLeft: Radius.circular(10),
-                        bottomRight: Radius.circular(10),
-                        topLeft: Radius.circular(
-                          message.messageType == 1 ? 10 : 0,
-                        ),
-                        topRight: Radius.circular(
-                          message.messageType == 1 ? 0 : 10,
-                        ),
-                      ),
+                  //=====================Avatar===========================
+                  if (message.messageType != 1)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 10),
+                      child: StyleConstants.avatarFriend,
                     ),
-                    child: Text(
-                      message.content.toString(),
-                      style: TextStyle(
-                        color:
-                            message.messageType == 1
-                                ? Colors.white
-                                : Colors.black,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                      ),
-                    ),
-                  ),
-                  //=====================time message=========================
+                  //=====================Content and Time=======================
                   Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
+                    crossAxisAlignment:
+                        message.messageType == 1
+                            ? CrossAxisAlignment.end
+                            : CrossAxisAlignment.start,
                     children: [
-                      Text(
-                        DateFormat('h:mm a').format(message.createdAt),
-                        style: TextStyle(
-                          color: Color.fromRGBO(121, 124, 123, 1),
-                          fontSize: 12,
-                          fontWeight: FontWeight.w100,
-                          fontStyle: FontStyle.italic,
+                      // Content message
+                      Container(
+                        constraints: BoxConstraints(
+                          maxWidth: MediaQuery.of(context).size.width * 0.7,
+                        ),
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color:
+                              message.messageType == 1
+                                  ? const Color.fromRGBO(32, 160, 144, 1)
+                                  : const Color.fromRGBO(242, 247, 251, 1),
+                          borderRadius: BorderRadius.only(
+                            bottomLeft: const Radius.circular(10),
+                            bottomRight: const Radius.circular(10),
+                            topLeft: Radius.circular(
+                              message.messageType == 1 ? 10 : 0,
+                            ),
+                            topRight: Radius.circular(
+                              message.messageType == 1 ? 0 : 10,
+                            ),
+                          ),
+                        ),
+                        child: Text(
+                          message.content.toString(),
+                          style: TextStyle(
+                            color:
+                                message.messageType == 1
+                                    ? Colors.white
+                                    : Colors.black,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
+                      ),
+                      //====================Time message======================
+                      Padding(
+                        padding: const EdgeInsets.only(top: 2),
+                        child: SizedBox(
+                          child: Align(
+                            alignment: Alignment.centerRight,
+                            child: Text(
+                              DateFormat('h:mm a').format(message.createdAt),
+                              style: const TextStyle(
+                                color: Color.fromRGBO(121, 124, 123, 1),
+                                fontSize: 12,
+                                fontWeight: FontWeight.w100,
+                                fontStyle: FontStyle.italic,
+                              ),
+                            ),
+                          ),
                         ),
                       ),
                     ],
@@ -200,33 +222,35 @@ class ChatCustomPage extends State<ChatPage> {
                   borderSide: BorderSide.none,
                   borderRadius: BorderRadius.circular(16),
                 ),
+                suffixIcon: GestureDetector(
+                  onTap: () {
+                    if (textEditingController.text.isNotEmpty) {
+                      setState(() {
+                        messages.add(
+                          Message(
+                            id: (messages.length + 1).toString(),
+                            myId: myID,
+                            friendId: friendID,
+                            files: [],
+                            content: textEditingController.text,
+                            images: [],
+                            isSend: 1,
+                            createdAt: DateTime.now(),
+                            messageType: 1,
+                          ),
+                        );
+                        textEditingController.clear();
+                        _scrollToEnd();
+                      });
+                    }
+                  },
+                  child: Icon(
+                    Icons.send,
+                    color: Color.fromRGBO(4, 125, 231, 1),
+                  ),
+                ),
               ),
             ),
-          ),
-          //============================send button=========================
-          IconButton(
-            icon: Icon(Icons.send, color: Color.fromRGBO(4, 125, 231, 1)),
-            onPressed: () {
-              if (textEditingController.text.isNotEmpty) {
-                setState(() {
-                  messages.add(
-                    Message(
-                      id: (messages.length + 1).toString(),
-                      myId: myID,
-                      friendId: friendID,
-                      files: [],
-                      content: textEditingController.text,
-                      images: [],
-                      isSend: 1,
-                      createdAt: DateTime.now(),
-                      messageType: 1,
-                    ),
-                  );
-                  textEditingController.clear();
-                  _scrollToEnd();
-                });
-              }
-            },
           ),
           //============================file button=========================
           IconButton(
