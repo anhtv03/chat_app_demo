@@ -1,9 +1,15 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:chat_app_demo/constants/style_constants.dart';
 import 'package:chat_app_demo/pages//register_constants.dart';
 import 'package:chat_app_demo/pages//home_page.dart';
+import 'package:chat_app_demo/utils/popup.dart';
+import 'package:chat_app_demo/models/DTOs/loginDTO.dart';
+import 'package:chat_app_demo/models/DTOs/responseBase.dart';
+import 'package:http/http.dart' as http;
 
 String errorMessage = '';
+const String url = 'http://30.30.30.86:8888/api/auth/login';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -21,7 +27,7 @@ class LoginCustomPage extends State<LoginPage> {
     final double screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
-      resizeToAvoidBottomInset: false,
+      resizeToAvoidBottomInset: true,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
@@ -48,7 +54,7 @@ class LoginCustomPage extends State<LoginPage> {
                   SizedBox(
                     width: double.infinity,
                     child: ElevatedButton(
-                      onPressed: () => {_handleLogin()},
+                      onPressed: () => _handleLogin(),
                       style: StyleConstants.loginButtonStyle,
                       child: const Text(
                         'Đăng nhập',
@@ -68,24 +74,63 @@ class LoginCustomPage extends State<LoginPage> {
     );
   }
 
-  void _handleLogin() {
+  @override
+  void dispose() {
+    _usernameController.dispose();
+    _passwordController.dispose();
+    super.dispose();
+  }
+
+  void _handleLogin() async {
     final username = _usernameController.text.trim();
     final password = _passwordController.text.trim();
 
-    setState(() {
-      if (username.isEmpty) {
+    if (username.isEmpty) {
+      setState(() {
         errorMessage = 'Tên đăng nhập không được để trống';
-      } else if (password.isEmpty) {
+      });
+      return;
+    } else if (password.isEmpty) {
+      setState(() {
         errorMessage = 'Mật khẩu không được để trống';
-      } else {
-        if (username == 'admin' && password == '123') {
-          _navigateToHomePage(context);
-          errorMessage = '';
-        } else {
-          errorMessage = 'Bạn nhập sai tên tài khoản hoặc mật khẩu! ';
-        }
+      });
+      return;
+    }
+
+    try {
+      var result = await login(username, password);
+
+      if (result.status == 1) {
+        _navigateToHomePage(context);
+        errorMessage = '';
       }
-    });
+    } catch (e) {
+      setState(() {
+        errorMessage = 'Bạn nhập sai tên tài khoản hoặc mật khẩu! ';
+      });
+    }
+  }
+
+  Future<responseBase<loginDTO>> login(String username, String password) async {
+    final res = await http.post(
+      Uri.parse(url),
+      headers: {'Content-Type': 'application/json'},
+      body: jsonEncode({'username': username, 'password': password}),
+    );
+    if (res.statusCode == 200) {
+      return responseBase.fromJson(
+        jsonDecode(res.body) as Map<String, dynamic>,
+        loginDTO.fromJson,
+      );
+    } else {
+      await showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return const PopupInternet();
+        },
+      );
+      throw Exception("Failed to login: ${res.statusCode} - ${res.body}");
+    }
   }
 
   void _navigateToHomePage(BuildContext context) {

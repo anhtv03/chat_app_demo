@@ -17,7 +17,7 @@ class PopupInternet extends StatelessWidget {
       actionsAlignment: MainAxisAlignment.center,
       actions: [
         TextButton(
-          onPressed: () => {Navigator.of(context).pop()},
+          onPressed: () => Navigator.of(context).pop(),
           style: TextButton.styleFrom(
             foregroundColor: Colors.white,
             backgroundColor: Color.fromRGBO(28, 127, 217, 1),
