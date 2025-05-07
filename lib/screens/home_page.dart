@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:chat_app_demo/constants/style_constants.dart';
-import 'package:chat_app_demo/pages/chat_page.dart';
+import 'package:chat_app_demo/screens/chat_page.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

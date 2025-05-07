@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:chat_app_demo/constants/style_constants.dart';
+import 'package:chat_app_demo/constants/api_constants.dart';
+import 'package:chat_app_demo/models/DTOs/responseBase.dart';
 
 String errorMessage = '';
 
@@ -13,7 +15,8 @@ class RegisterPage extends StatefulWidget {
 }
 
 class RegisterCustomPage extends State<RegisterPage> {
-  final _registerForm = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
+  final _nameController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
 
@@ -29,11 +32,11 @@ class RegisterCustomPage extends State<RegisterPage> {
     final double screenHeight = MediaQuery.of(context).size.height;
 
     return Scaffold(
+      resizeToAvoidBottomInset: false,
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 20),
           child: Form(
-            key: _registerForm,
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -59,23 +62,19 @@ class RegisterCustomPage extends State<RegisterPage> {
                 SizedBox(height: screenHeight * 0.05),
 
                 _buildTextLabel('Tên hiển thị'),
-                TextFormField(
-                  decoration: InputDecoration(border: UnderlineInputBorder()),
-                ),
+                _buildTextField(false, _nameController),
                 SizedBox(height: screenHeight * 0.01),
-                _buildTextLabel('Tài khoản'),
 
-                TextFormField(
-                  decoration: InputDecoration(border: UnderlineInputBorder()),
-                ),
+                _buildTextLabel('Tài khoản'),
+                _buildTextField(false, _usernameController),
                 SizedBox(height: screenHeight * 0.01),
 
                 _buildTextLabel('Mật khẩu'),
-                _buildTextField(_passwordController),
+                _buildTextField(true, _passwordController),
                 SizedBox(height: screenHeight * 0.01),
 
                 _buildTextLabel('Nhập lại mật khẩu'),
-                _buildTextField(_confirmPasswordController),
+                _buildTextField(true, _confirmPasswordController),
                 SizedBox(height: screenHeight * 0.15),
 
                 Column(
@@ -90,25 +89,7 @@ class RegisterCustomPage extends State<RegisterPage> {
                     SizedBox(
                       width: double.infinity,
                       child: ElevatedButton(
-                        onPressed:
-                            () => {
-                              if (_registerForm.currentState!.validate())
-                                {
-                                  if (_passwordController.text !=
-                                      _confirmPasswordController.text)
-                                    {
-                                      setState(() {
-                                        errorMessage = 'Mật khẩu không khớp !';
-                                      }),
-                                    }
-                                  else
-                                    {
-                                      setState(() {
-                                        errorMessage = '';
-                                      }),
-                                    },
-                                },
-                            },
+                        onPressed: () => handleRegister(),
                         style: StyleConstants.loginButtonStyle,
                         child: const Text(
                           'Tạo tài khoản',
@@ -125,17 +106,48 @@ class RegisterCustomPage extends State<RegisterPage> {
       ),
     );
   }
+
+  void handleRegister() async {
+    final username = _usernameController.text.trim();
+    final name = _nameController.text.trim();
+    final password = _passwordController.text;
+    final confirmPassword = _confirmPasswordController.text;
+
+    final fields = {
+      username: 'Tên đăng nhập không được để trống',
+      name: 'Tên hiển thị không được để trống',
+      password: 'Mật khẩu không được để trống',
+      confirmPassword: 'Nhập lại mật khẩu không được để trống',
+    };
+
+    for (var item in fields.entries) {
+      if (item.key.isEmpty) {
+        setState(() {
+          errorMessage = item.value;
+        });
+        return;
+      }
+    }
+
+    if (password != confirmPassword) {
+      setState(() {
+        errorMessage = 'Mật khẩu không khớp !';
+      });
+      return;
+    }
+
+    setState(() {
+      errorMessage = '';
+    });
+
+  }
 }
 
-Widget _buildTextField(TextEditingController controller) {
+Widget _buildTextField(bool isPassword, TextEditingController controller) {
   return TextFormField(
     controller: controller,
-    obscureText: true,
+    obscureText: isPassword,
     decoration: InputDecoration(border: UnderlineInputBorder()),
-    validator: (value) {
-      if (value == null || value.isEmpty) {}
-      return null;
-    },
   );
 }
 
