@@ -4,7 +4,8 @@ import 'package:chat_app_demo/screens/chat_page.dart';
 import 'package:chat_app_demo/screens/login_page.dart';
 import 'package:chat_app_demo/services/token_service.dart';
 import 'package:chat_app_demo/services/user_service.dart';
-import 'package:chat_app_demo/services/token_service.dart';
+import 'package:chat_app_demo/services/message_service.dart';
+import 'package:chat_app_demo/models/friend.dart';
 import 'dart:convert';
 
 class HomePage extends StatefulWidget {
@@ -16,12 +17,13 @@ class HomePage extends StatefulWidget {
 
 class HomeCustomPage extends State<HomePage> {
   String? _avatar;
-
+  List<Friend> _friends = [];
 
   @override
   void initState() {
     super.initState();
     _handleInfo();
+    _getFriends();
   }
 
   @override
@@ -82,21 +84,37 @@ class HomeCustomPage extends State<HomePage> {
 
   //============handle logic=====================
   Future<void> _handleInfo() async {
-    try{
+    try {
       String token = await TokenService.getToken('user') as String;
       var result = await UserService.getUser(token);
-      _avatar = result.data.avatar;
+      setState(() {
+        _avatar = result.data.avatar;
+      });
 
-      print(jsonEncode({
-        'status': result.status,
-        'message': result.message,
-        'data': {
-          'username': result.data.username,
-          'fullname': result.data.fullname,
-          'avatar': result.data.avatar,
-        },
-      }));
-    } catch(e){
+      print(
+        jsonEncode({
+          'status': result.status,
+          'message': result.message,
+          'data': {
+            'username': result.data.username,
+            'fullname': result.data.fullname,
+            'avatar': result.data.avatar,
+          },
+        }),
+      );
+    } catch (e) {
+      print(e.toString());
+    }
+  }
+
+  Future<void> _getFriends() async {
+    try {
+      // String token = await TokenService.getToken('user') as String;
+      // var result = await MessageService.getFriends(token);
+      // setState(() {
+      //   _friends = result.data;
+      // });
+    } catch (e) {
       print(e.toString());
     }
   }
@@ -156,8 +174,9 @@ class HomeCustomPage extends State<HomePage> {
         slivers: [
           SliverToBoxAdapter(child: SizedBox(height: screenHeight * 0.02)),
           SliverList.builder(
-            itemCount: 10,
+            itemCount: _friends.length,
             itemBuilder: (BuildContext context, int index) {
+              final friend = _friends[index];
               return GestureDetector(
                 onTap: () {
                   Navigator.push(
@@ -165,11 +184,11 @@ class HomeCustomPage extends State<HomePage> {
                     MaterialPageRoute(
                       builder:
                           (context) =>
-                          ChatPage(friendId: '${index + 2}', myId: '1'),
+                              ChatPage(friendId: friend.friendID, myId: '1'),
                     ),
                   );
                 },
-                child: _buildDetailFriend(index + 2),
+                child: _buildDetailFriend(friend),
               );
             },
           ),
@@ -178,7 +197,7 @@ class HomeCustomPage extends State<HomePage> {
     );
   }
 
-  Widget _buildDetailFriend(int index) {
+  Widget _buildDetailFriend(Friend friend) {
     return Padding(
       padding: const EdgeInsets.only(bottom: 15),
       child: Row(
@@ -187,12 +206,13 @@ class HomeCustomPage extends State<HomePage> {
           StyleConstants.avatarFriend,
           Padding(
             padding: const EdgeInsets.only(left: 40),
-            child: Text('Bạn $index', style: StyleConstants.textTitleListUser),
+            child: Text(
+              friend.fullName,
+              style: StyleConstants.textTitleListUser,
+            ),
           ),
         ],
       ),
     );
   }
 }
-
-
