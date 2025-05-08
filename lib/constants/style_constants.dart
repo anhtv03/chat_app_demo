@@ -13,18 +13,22 @@ class StyleConstants {
     ),
   );
 
-  static const avatar = SizedBox(
-    height: 42,
-    width: 43,
-    child: CircleAvatar(
-      radius: 50,
-      backgroundColor: Color.fromRGBO(103, 131, 231, 1),
-      backgroundImage: NetworkImage(
-        'https://res.cloudinary.com/djj5gopcs/image/upload/v1744612363/download20230704194701_ult1ta.png', // Replace with your image URL
+  static Widget avatar(String? avatarUrl) {
+    return SizedBox(
+      height: 42,
+      width: 43,
+      child: CircleAvatar(
+        radius: 50,
+        backgroundColor: Color.fromRGBO(103, 131, 231, 1),
+        backgroundImage:
+            avatarUrl != null
+                ? NetworkImage(avatarUrl)
+                : NetworkImage(
+                  'https://res.cloudinary.com/djj5gopcs/image/upload/v1744612363/download20230704194701_ult1ta.png',
+                ),
       ),
-      // child: Icon(Icons.person, size: 30, color: Colors.white),
-    ),
-  );
+    );
+  }
 
   static var avatarFriend = SizedBox(
     height: 50,
@@ -35,7 +39,7 @@ class StyleConstants {
         CircleAvatar(
           radius: 25,
           backgroundImage: NetworkImage(
-            'https://res.cloudinary.com/djj5gopcs/image/upload/v1744612363/download20230704194701_ult1ta.png', // Replace with your image URL
+            'https://res.cloudinary.com/djj5gopcs/image/upload/v1744612363/download20230704194701_ult1ta.png',
           ),
         ),
         Positioned(
@@ -92,5 +96,3 @@ class StyleConstants {
     shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
   );
 }
-
-

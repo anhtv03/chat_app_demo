@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:chat_app_demo/constants/style_constants.dart';
 import 'package:chat_app_demo/screens//register_page.dart';
 import 'package:chat_app_demo/screens//home_page.dart';
-import 'package:chat_app_demo/services/token_manager.dart';
-import 'package:chat_app_demo/services/auth_manager.dart';
+import 'package:chat_app_demo/services/token_service.dart';
+import 'package:chat_app_demo/services/auth_service.dart';
 
 String _errorMessage = '';
 bool _isLoading = false;
@@ -39,10 +39,12 @@ class LoginCustomPage extends State<LoginPage> {
                   SizedBox(height: screenHeight * 0.001),
                   _buildTextField(false, _usernameController),
                   SizedBox(height: screenHeight * 0.04),
+
                   _buildTextLabel('Mật khẩu'),
                   SizedBox(height: screenHeight * 0.001),
                   _buildTextField(true, _passwordController),
                   SizedBox(height: screenHeight * 0.15),
+
                   _buildTextError(),
                   const Spacer(),
 
@@ -105,11 +107,11 @@ class LoginCustomPage extends State<LoginPage> {
     });
 
     try {
-      var result = await AuthManager.login(username, password);
+      var result = await AuthService.login(username, password);
 
       if (result.status == 1) {
         final token = result.data.token;
-        TokenManager.saveToken('user', token);
+        TokenService.saveToken('user', token);
         setState(() {
           _isLoading = false;
         });
@@ -118,7 +120,11 @@ class LoginCustomPage extends State<LoginPage> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorMessage = 'Bạn nhập sai tên tài khoản hoặc mật khẩu! ';
+        String mess = e.toString().replaceAll('Exception: ', '');
+        _errorMessage =
+            mess == 'Incorrect password'
+                ? 'Bạn nhập sai tên tài khoản hoặc mật khẩu!'
+                : 'Đăng nhập thất bại do lỗi hệ thống';
         print(e.toString());
       });
     }

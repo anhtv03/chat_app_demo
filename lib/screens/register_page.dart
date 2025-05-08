@@ -1,4 +1,4 @@
-import 'package:chat_app_demo/services/auth_manager.dart';
+import 'package:chat_app_demo/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:chat_app_demo/constants/style_constants.dart';
 
@@ -145,7 +145,7 @@ class RegisterCustomPage extends State<RegisterPage> {
     });
 
     try {
-      var result = await AuthManager.register(username, name, password);
+      var result = await AuthService.register(username, name, password);
       if (result.status == 1) {
         setState(() {
           _isLoading = false;
@@ -157,7 +157,11 @@ class RegisterCustomPage extends State<RegisterPage> {
     } catch (e) {
       setState(() {
         _isLoading = false;
-        _errorMessage = "Tài khoản đã tồn tại!";
+        String mess = e.toString().replaceAll('Exception: ', '');
+        _errorMessage =
+        mess == 'Username already exists'
+            ? 'Tài khoản đã tồn tại!'
+            : 'Đăng ký thất bại do lỗi hệ thống';
         print(e.toString());
       });
     }
@@ -194,7 +198,12 @@ Widget _buildTextError() {
 void _buildNotiSucces(BuildContext context) {
   ScaffoldMessenger.of(context).showSnackBar(
     const SnackBar(
-      content: Text(''),
+      content: Center(
+        child: Text(
+          'Đăng ký tài khoản thành công!',
+          textAlign: TextAlign.center,
+        ),
+      ),
       duration: Duration(seconds: 2),
       backgroundColor: Colors.lightGreen,
     ),

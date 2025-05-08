@@ -1,6 +1,6 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
-class TokenManager {
+class TokenService {
   static Future<void> saveToken(String key, String token) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(key, token);

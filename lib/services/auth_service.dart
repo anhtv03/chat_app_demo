@@ -4,7 +4,7 @@ import 'package:chat_app_demo/models/DTOs/responseBase.dart';
 import 'package:chat_app_demo/constants/api_constants.dart';
 import 'package:http/http.dart' as http;
 
-class AuthManager {
+class AuthService {
   static Future<responseBase<authDTO>> login(
     String username,
     String password,
@@ -18,7 +18,7 @@ class AuthManager {
     if (res.statusCode == 200) {
       return responseBase.fromJson(body, authDTO.fromJson);
     } else {
-      throw Exception("Failed to login: ${res.statusCode} - ${res.body}");
+      throw Exception(body["message"]);
     }
   }
 
@@ -40,7 +40,7 @@ class AuthManager {
     if (res.statusCode == 200) {
       return responseBase.fromJson(body, authDTO.fromJson);
     } else {
-      throw Exception("Failed to login: ${res.statusCode} - ${res.body}");
+      throw Exception(body["message"]);
     }
   }
 }
