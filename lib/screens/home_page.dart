@@ -18,12 +18,21 @@ class HomePage extends StatefulWidget {
 class HomeCustomPage extends State<HomePage> {
   String? _avatar;
   List<Friend> _friends = [];
+  List<Friend> _filteredFriends = [];
+  final TextEditingController _searchController = TextEditingController();
 
   @override
   void initState() {
     super.initState();
     _handleInfo();
     _getFriends();
+    _searchController.addListener(_onSearchFriends);
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -82,7 +91,7 @@ class HomeCustomPage extends State<HomePage> {
     );
   }
 
-  //============handle logic=====================
+  //==========================handle logic==============================
   Future<void> _handleInfo() async {
     try {
       String token = await TokenService.getToken('user') as String;
@@ -90,18 +99,6 @@ class HomeCustomPage extends State<HomePage> {
       setState(() {
         _avatar = result.data.avatar;
       });
-
-      print(
-        jsonEncode({
-          'status': result.status,
-          'message': result.message,
-          'data': {
-            'username': result.data.username,
-            'fullname': result.data.fullname,
-            'avatar': result.data.avatar,
-          },
-        }),
-      );
     } catch (e) {
       print(e.toString());
     }
@@ -109,11 +106,13 @@ class HomeCustomPage extends State<HomePage> {
 
   Future<void> _getFriends() async {
     try {
-      // String token = await TokenService.getToken('user') as String;
-      // var result = await MessageService.getFriends(token);
-      // setState(() {
-      //   _friends = result.data;
-      // });
+      String token = await TokenService.getToken('user') as String;
+      var result = await MessageService.getFriends(token);
+      setState(() {
+        _friends = result.data;
+        _filteredFriends = _friends;
+      });
+      print(_friends.length);
     } catch (e) {
       print(e.toString());
     }
@@ -128,11 +127,24 @@ class HomeCustomPage extends State<HomePage> {
     );
   }
 
+  void _onSearchFriends() {
+    final query = _searchController.text.toLowerCase();
+    setState(() {
+      if (query.isEmpty) {
+        _filteredFriends = _friends;
+      } else {
+        _filteredFriends =
+            _friends.where((friend) {
+              return friend.fullName.toLowerCase().contains(query);
+            }).toList();
+      }
+    });
+  }
+
   //==========build UI====================
   Widget _searchTextField() {
-    final TextEditingController searchController = TextEditingController();
     return TextField(
-      controller: searchController,
+      controller: _searchController,
       decoration: InputDecoration(
         hintText: 'Tìm kiếm',
         hintStyle: StyleConstants.textStyle,
@@ -145,7 +157,7 @@ class HomeCustomPage extends State<HomePage> {
         ),
         suffixIcon: GestureDetector(
           onTap: () {
-            searchController.clear();
+            _searchController.clear();
           },
           child: Icon(Icons.close, color: Colors.black),
         ),
@@ -174,9 +186,9 @@ class HomeCustomPage extends State<HomePage> {
         slivers: [
           SliverToBoxAdapter(child: SizedBox(height: screenHeight * 0.02)),
           SliverList.builder(
-            itemCount: _friends.length,
+            itemCount: _filteredFriends.length,
             itemBuilder: (BuildContext context, int index) {
-              final friend = _friends[index];
+              final friend = _filteredFriends[index];
               return GestureDetector(
                 onTap: () {
                   Navigator.push(
@@ -203,12 +215,16 @@ class HomeCustomPage extends State<HomePage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          StyleConstants.avatarFriend,
-          Padding(
-            padding: const EdgeInsets.only(left: 40),
-            child: Text(
-              friend.fullName,
-              style: StyleConstants.textTitleListUser,
+          StyleConstants.avatarFriend(friend.avatar, friend.isOnline),
+          Flexible(
+            child: Padding(
+              padding: const EdgeInsets.only(left: 40),
+              child: Text(
+                friend.fullName,
+                style: StyleConstants.textTitleListUser,
+                overflow: TextOverflow.ellipsis,
+                maxLines: 1,
+              ),
             ),
           ),
         ],

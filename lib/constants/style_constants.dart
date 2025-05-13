@@ -30,37 +30,44 @@ class StyleConstants {
     );
   }
 
-  static var avatarFriend = SizedBox(
-    height: 50,
-    width: 50,
-    child: Stack(
-      alignment: Alignment.center,
-      children: [
-        CircleAvatar(
-          radius: 25,
-          backgroundImage: NetworkImage(
-            'https://res.cloudinary.com/djj5gopcs/image/upload/v1744612363/download20230704194701_ult1ta.png',
+  static Widget avatarFriend(String? avatarUrl, bool isOnline) {
+    return SizedBox(
+      height: 50,
+      width: 50,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          CircleAvatar(
+            radius: 25,
+            backgroundImage:
+                avatarUrl != null
+                    ? NetworkImage(avatarUrl)
+                    : NetworkImage(
+                      'https://res.cloudinary.com/djj5gopcs/image/upload/v1744612363/download20230704194701_ult1ta.png',
+                    ),
           ),
-        ),
-        Positioned(
-          bottom: 0,
-          right: 0,
-          child: SizedBox(
-            height: 10,
-            width: 10,
-            child: Container(
-              decoration: const BoxDecoration(
-                color: Colors.green,
-                shape: BoxShape.circle,
-                border: Border.fromBorderSide(BorderSide(color: Colors.white)),
+          if (isOnline)
+            Positioned(
+              bottom: 0,
+              right: 0,
+              child: SizedBox(
+                height: 10,
+                width: 10,
+                child: Container(
+                  decoration: const BoxDecoration(
+                    color: Colors.green,
+                    shape: BoxShape.circle,
+                    border: Border.fromBorderSide(
+                      BorderSide(color: Colors.white),
+                    ),
+                  ),
+                ),
               ),
             ),
-          ),
-        ),
-      ],
-    ),
-    // child: Icon(Icons.person, size: 30, color: Colors.white);
-  );
+        ],
+      ),
+    );
+  }
 
   static const textStyle = TextStyle(
     fontFamily: 'Roboto',

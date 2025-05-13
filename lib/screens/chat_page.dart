@@ -65,13 +65,13 @@ class ChatCustomPage extends State<ChatPage> {
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          StyleConstants.avatarFriend,
+          StyleConstants.avatarFriend(null, true),
           Padding(
             padding: EdgeInsets.only(left: 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Bạn $friendID', style: StyleConstants.textStyle),
+                Text('Bạn ', style: StyleConstants.textStyle),
                 Text(
                   'Trực tuyến',
                   style: TextStyle(
@@ -115,7 +115,7 @@ class ChatCustomPage extends State<ChatPage> {
                   if (message.messageType != 1)
                     Padding(
                       padding: const EdgeInsets.only(right: 10),
-                      child: StyleConstants.avatarFriend,
+                      child: StyleConstants.avatarFriend(null, true),
                     ),
                   //=====================Content and Time=======================
                   Column(
