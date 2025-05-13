@@ -194,9 +194,7 @@ class HomeCustomPage extends State<HomePage> {
                   Navigator.push(
                     context,
                     MaterialPageRoute(
-                      builder:
-                          (context) =>
-                              ChatPage(friendId: friend.friendID, myId: '1'),
+                      builder: (context) => ChatPage(friend: friend),
                     ),
                   );
                 },

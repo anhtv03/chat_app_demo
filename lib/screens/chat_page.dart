@@ -3,29 +3,31 @@ import 'package:flutter/material.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:chat_app_demo/constants/style_constants.dart';
 import 'package:chat_app_demo/models/message.dart';
+import 'package:chat_app_demo/models/friend.dart';
+import 'package:chat_app_demo/services/token_service.dart';
+import 'package:chat_app_demo/services/user_service.dart';
 import 'package:intl/intl.dart';
 
 class ChatPage extends StatefulWidget {
-  final String friendId;
-  final String myId;
+  final Friend friend;
 
-  const ChatPage({super.key, required this.friendId, required this.myId});
+  const ChatPage({super.key, required this.friend});
 
   @override
   State<StatefulWidget> createState() => ChatCustomPage();
 }
 
 class ChatCustomPage extends State<ChatPage> {
-  TextEditingController textEditingController = TextEditingController();
-  ScrollController scrollController = ScrollController();
-  List<Message> messages = [];
-  String friendID = "", myID = "";
+  final TextEditingController _textEditingController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  List<Message> _messages = [];
+  late Friend _friend;
 
   @override
   void initState() {
     super.initState();
-    friendID = widget.friendId;
-    myID = widget.myId;
+    _friend = widget.friend;
+
     _loadMessage();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -35,8 +37,8 @@ class ChatCustomPage extends State<ChatPage> {
 
   @override
   void dispose() {
-    textEditingController.dispose();
-    scrollController.dispose();
+    _textEditingController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -59,28 +61,72 @@ class ChatCustomPage extends State<ChatPage> {
     );
   }
 
+  //==========================handle logic==============================
+  Future<void> _handleInfo() async {
+    try {
+      String token = await TokenService.getToken('user') as String;
+      var result = await UserService.getUser(token);
+      setState(() {
+        // _avatar = result.data.avatar;
+      });
+    } catch (e) {
+      print(e.toString());
+    }
+  }
+
+  Future<void> _loadMessage() async {
+    try {
+      final String jsonString = await DefaultAssetBundle.of(
+        context,
+      ).loadString('assets/messages.txt');
+      final List<dynamic> jsonData = jsonDecode(jsonString) as List<dynamic>;
+      final List<Message> loadedMessages =
+          jsonData
+              .map(
+                (message) => Message.fromJson(message as Map<String, dynamic>),
+              )
+              .toList();
+
+      setState(() {
+        _messages =
+            loadedMessages
+                .where((mess) => mess.friendId == _friend.friendID)
+                .toList();
+      });
+    } catch (e) {
+      print('Error loading messages: $e\n');
+    }
+  }
+
+  //==========================build UI==============================
   Widget _headerTitle() {
     return Padding(
       padding: EdgeInsets.only(left: 10),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
-          StyleConstants.avatarFriend(null, true),
+          StyleConstants.avatarFriend(_friend.avatar, _friend.isOnline),
           Padding(
             padding: EdgeInsets.only(left: 20),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('Bạn ', style: StyleConstants.textStyle),
                 Text(
-                  'Trực tuyến',
-                  style: TextStyle(
-                    color: Color.fromRGBO(121, 124, 123, 1),
-                    fontSize: 12,
-                    fontWeight: FontWeight.w100,
-                    fontStyle: FontStyle.italic,
-                  ),
+                  _friend.fullName,
+                  style: StyleConstants.textStyle,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
                 ),
+                if (_friend.isOnline)
+                  Text(
+                    'Trực tuyến',
+                    style: TextStyle(
+                      color: Color.fromRGBO(121, 124, 123, 1),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w100,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
               ],
             ),
           ),
@@ -93,10 +139,10 @@ class ChatCustomPage extends State<ChatPage> {
     return Flexible(
       child: ListView.builder(
         physics: const ClampingScrollPhysics(),
-        controller: scrollController,
-        itemCount: messages.length,
+        controller: _scrollController,
+        itemCount: _messages.length,
         itemBuilder: (context, index) {
-          final Message message = messages[index];
+          final Message message = _messages[index];
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
             child: Align(
@@ -202,7 +248,7 @@ class ChatCustomPage extends State<ChatPage> {
                   return SizedBox(
                     height: screenHeight * 0.4,
                     child: EmojiPicker(
-                      textEditingController: textEditingController,
+                      textEditingController: _textEditingController,
                     ),
                   );
                 },
@@ -212,7 +258,7 @@ class ChatCustomPage extends State<ChatPage> {
           //============================text input=========================
           Expanded(
             child: TextField(
-              controller: textEditingController,
+              controller: _textEditingController,
               decoration: InputDecoration(
                 hintText: 'Nhập tin nhắn...',
                 hintStyle: StyleConstants.textStyle,
@@ -224,22 +270,22 @@ class ChatCustomPage extends State<ChatPage> {
                 ),
                 suffixIcon: GestureDetector(
                   onTap: () {
-                    if (textEditingController.text.isNotEmpty) {
+                    if (_textEditingController.text.isNotEmpty) {
                       setState(() {
-                        messages.add(
+                        _messages.add(
                           Message(
-                            id: (messages.length + 1).toString(),
-                            myId: myID,
-                            friendId: friendID,
+                            id: (_messages.length + 1).toString(),
+                            myId: "1",
+                            friendId: _friend.friendID,
                             files: [],
-                            content: textEditingController.text,
+                            content: _textEditingController.text,
                             images: [],
                             isSend: 1,
                             createdAt: DateTime.now(),
                             messageType: 1,
                           ),
                         );
-                        textEditingController.clear();
+                        _textEditingController.clear();
                         _scrollToEnd();
                       });
                     }
@@ -288,36 +334,12 @@ class ChatCustomPage extends State<ChatPage> {
   }
 
   void _scrollToEnd() {
-    if (scrollController.hasClients) {
-      scrollController.animateTo(
-        scrollController.position.maxScrollExtent,
+    if (_scrollController.hasClients) {
+      _scrollController.animateTo(
+        _scrollController.position.maxScrollExtent,
         duration: Duration(milliseconds: 300),
         curve: Curves.easeOutBack,
       );
-    }
-  }
-
-  Future<void> _loadMessage() async {
-    try {
-      final String jsonString = await DefaultAssetBundle.of(
-        context,
-      ).loadString('assets/messages.txt');
-      final List<dynamic> jsonData = jsonDecode(jsonString) as List<dynamic>;
-      final List<Message> loadedMessages =
-          jsonData
-              .map(
-                (message) => Message.fromJson(message as Map<String, dynamic>),
-              )
-              .toList();
-
-      setState(() {
-        messages =
-            loadedMessages
-                .where((mess) => mess.friendId == friendID && mess.myId == myID)
-                .toList();
-      });
-    } catch (e) {
-      print('Error loading messages: $e\n');
     }
   }
 }
