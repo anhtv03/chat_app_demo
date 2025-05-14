@@ -30,7 +30,7 @@ class MessageService {
   ) async {
     final res = await http.get(
       Uri.parse(
-        RouteConstants.getUrl("/message/get-message?FriendID=${friendId}"),
+        RouteConstants.getUrl("/message/get-message?FriendID=$friendId"),
       ),
       headers: {'Authorization': 'Bearer $token'},
     );
@@ -50,19 +50,25 @@ class MessageService {
     String friendId,
     MessageDTO dto,
   ) async {
-    final res = await http.post(
+    final request = http.MultipartRequest(
+      'POST',
       Uri.parse(RouteConstants.getUrl("/message/send-message")),
-      headers: {
-        'Authorization': 'Bearer $token',
-        'Content-Type': 'application/json',
-      },
-      body: jsonEncode({
-        'FriendID': friendId,
-        'Content': dto.content,
-        'Files': dto.files,
-        'Images': dto.images,
-      }),
     );
+    request.headers['Authorization'] = 'Bearer $token';
+    request.fields['FriendID'] = friendId;
+    request.fields['Content'] = dto.content ?? '';
+
+    if (dto.files != null && dto.files!.isNotEmpty) {
+      for (var file in dto.files!) {
+        request.files.add(
+          await http.MultipartFile.fromPath('Files', file.path),
+        );
+      }
+    }
+
+    final steamedRes = await request.send();
+    final res = await http.Response.fromStream(steamedRes);
+
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     if (res.statusCode == 200) {
       return responseBase.fromJson(body, Message.fromJson);

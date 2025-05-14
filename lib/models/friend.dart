@@ -1,7 +1,7 @@
 class Friend {
   final String content;
-  final String? files;
-  final String? images;
+  final List<String>? files;
+  final List<String>? images;
   final int isSend;
   final String friendID;
   final String fullName;
@@ -24,8 +24,8 @@ class Friend {
   factory Friend.fromJson(Map<String, dynamic> json) {
     return Friend(
       content: json['Content'] as String,
-      files: json['Files'] as String?,
-      images: json['Images'] as String?,
+      files: (json['Files'] as List<dynamic>?)?.cast<String>(),
+      images: (json['Images'] as List<dynamic>?)?.cast<String>(),
       isSend: json['isSend'] as int,
       friendID: json['FriendID'] as String,
       fullName: json['FullName'] as String,

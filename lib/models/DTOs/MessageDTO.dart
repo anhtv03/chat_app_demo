@@ -1,7 +1,9 @@
-class MessageDTO {
+import 'dart:io';
+
+class   MessageDTO {
   final String? content;
-  final List<String> files;
-  final List<String> images;
+  final List<File>? files;
+  final List<File>? images;
 
   MessageDTO({
     this.content,

@@ -28,10 +28,6 @@ class ChatCustomPage extends State<ChatPage> {
     super.initState();
     _friend = widget.friend;
     _loadMessage();
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scrollToEnd();
-    });
   }
 
   @override
@@ -67,26 +63,28 @@ class ChatCustomPage extends State<ChatPage> {
       var result = await MessageService.getMessages(_friend.friendID, token);
       setState(() {
         _messages = result.data;
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          _scrollToEnd();
+        });
       });
-      print(result.data.length);
     } catch (e) {
       print(e.toString());
     }
   }
 
-  Future<void> _sendMessage() async {
+  Future<void> _sendMessage(String content) async {
     try {
       String token = await TokenService.getToken('user') as String;
-      MessageDTO dto = MessageDTO(content: _textEditingController.text);
+      MessageDTO dto = MessageDTO(content: content);
       var result = await MessageService.sendMessage(
         token,
         _friend.friendID,
         dto,
       );
       _loadMessage();
-      print(
-        "${result.data.id} / ${result.data.content} / ${result.data.createdAt} ",
-      );
+      // print(
+      //   "${result.data.id} / ${result.data.content} / ${result.data.createdAt} ",
+      // );
     } catch (e) {
       print(e.toString());
     }
@@ -133,6 +131,7 @@ class ChatCustomPage extends State<ChatPage> {
     return Flexible(
       child: ListView.builder(
         physics: const ClampingScrollPhysics(),
+        padding: const EdgeInsets.only(bottom: 50),
         controller: _scrollController,
         itemCount: _messages.length,
         itemBuilder: (context, index) {
@@ -265,10 +264,10 @@ class ChatCustomPage extends State<ChatPage> {
                 suffixIcon: GestureDetector(
                   onTap: () {
                     if (_textEditingController.text.isNotEmpty) {
-                      _sendMessage();
+                      final messageContent = _textEditingController.text;
+                      _sendMessage(messageContent);
                       setState(() {
                         _textEditingController.clear();
-                        _scrollToEnd();
                       });
                     }
                   },
