@@ -59,8 +59,8 @@ class MessageService {
       body: jsonEncode({
         'FriendID': friendId,
         'Content': dto.content,
-        'Files': dto.files ?? [],
-        'Images': dto.images ?? [],
+        'Files': dto.files,
+        'Images': dto.images,
       }),
     );
     final body = jsonDecode(res.body) as Map<String, dynamic>;
