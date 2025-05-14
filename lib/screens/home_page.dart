@@ -6,7 +6,6 @@ import 'package:chat_app_demo/services/token_service.dart';
 import 'package:chat_app_demo/services/user_service.dart';
 import 'package:chat_app_demo/services/message_service.dart';
 import 'package:chat_app_demo/models/friend.dart';
-import 'dart:convert';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});

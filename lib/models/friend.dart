@@ -31,7 +31,7 @@ class Friend {
       fullName: json['FullName'] as String,
       username: json['Username'] as String,
       avatar: json['Avatar'] as String?,
-      isOnline: json['isOnline'] as bool ?? false,
+      isOnline: json['isOnline'] as bool,
     );
   }
 }
