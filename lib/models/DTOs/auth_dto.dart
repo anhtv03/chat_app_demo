@@ -1,16 +1,16 @@
-class authDTO {
+class AuthDTO {
   final String username;
   final String fullName;
   final String token;
 
-  authDTO({
+  AuthDTO({
     required this.username,
     required this.fullName,
     required this.token,
   });
 
-  factory authDTO.fromJson(Map<String, dynamic> json) {
-    return authDTO(
+  factory AuthDTO.fromJson(Map<String, dynamic> json) {
+    return AuthDTO(
       token: json['token'] as String,
       username: json['Username'] as String,
       fullName: json['FullName'] as String,

@@ -1,21 +1,21 @@
 import 'dart:convert';
-import 'package:chat_app_demo/models/DTOs/responseBase.dart';
-import 'package:chat_app_demo/models/DTOs/responseList.dart';
-import 'package:chat_app_demo/models/DTOs/MessageDTO.dart';
+import 'package:chat_app_demo/models/DTOs/response_base.dart';
+import 'package:chat_app_demo/models/DTOs/response_list.dart';
+import 'package:chat_app_demo/models/DTOs/message_dto.dart';
 import 'package:chat_app_demo/models/friend.dart';
 import 'package:chat_app_demo/constants/api_constants.dart';
 import 'package:chat_app_demo/models/message.dart';
 import 'package:http/http.dart' as http;
 
 class MessageService {
-  static Future<responseList<Friend>> getFriends(String token) async {
+  static Future<ResponseList<Friend>> getFriends(String token) async {
     final res = await http.get(
       Uri.parse(RouteConstants.getUrl("/message/list-friend")),
       headers: {'Authorization': 'Bearer $token'},
     );
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     if (res.statusCode == 200) {
-      return responseList.fromJson(
+      return ResponseList.fromJson(
         body,
         (data) => Friend.fromJson(data as Map<String, dynamic>),
       );
@@ -24,7 +24,7 @@ class MessageService {
     }
   }
 
-  static Future<responseList<Message>> getMessages(
+  static Future<ResponseList<Message>> getMessages(
     String friendId,
     String token,
   ) async {
@@ -36,7 +36,7 @@ class MessageService {
     );
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     if (res.statusCode == 200) {
-      return responseList.fromJson(
+      return ResponseList.fromJson(
         body,
         (data) => Message.fromJson(data as Map<String, dynamic>),
       );
@@ -45,7 +45,7 @@ class MessageService {
     }
   }
 
-  static Future<responseBase<Message>> sendMessage(
+  static Future<ResponseBase<Message>> sendMessage(
     String token,
     String friendId,
     MessageDTO dto,
@@ -71,7 +71,7 @@ class MessageService {
 
     final body = jsonDecode(res.body) as Map<String, dynamic>;
     if (res.statusCode == 200) {
-      return responseBase.fromJson(body, Message.fromJson);
+      return ResponseBase.fromJson(body, Message.fromJson);
     } else {
       throw Exception(body['message']);
     }

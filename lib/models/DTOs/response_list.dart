@@ -1,19 +1,19 @@
-class responseList<T> {
+class ResponseList<T> {
   final int status;
   final List<T> data;
   final String message;
 
-  responseList({
+  ResponseList({
     required this.status,
     required this.data,
     required this.message,
   });
 
-  factory responseList.fromJson(
+  factory ResponseList.fromJson(
     Map<String, dynamic> json,
     T Function(dynamic) fromJson,
   ) {
-    return responseList<T>(
+    return ResponseList<T>(
       status: json['status'] as int,
       data:
           (json['data'] as List<dynamic>)

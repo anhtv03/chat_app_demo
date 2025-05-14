@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:chat_app_demo/constants/style_constants.dart';
 import 'package:chat_app_demo/models/message.dart';
 import 'package:chat_app_demo/models/friend.dart';
-import 'package:chat_app_demo/models/DTOs/MessageDTO.dart';
+import 'package:chat_app_demo/models/DTOs/message_dto.dart';
 import 'package:chat_app_demo/services/token_service.dart';
 import 'package:chat_app_demo/services/message_service.dart';
 import 'package:intl/intl.dart';
@@ -20,8 +21,10 @@ class ChatPage extends StatefulWidget {
 class ChatCustomPage extends State<ChatPage> {
   final TextEditingController _textEditingController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
+  final ImagePicker _picker = ImagePicker();
   List<Message> _messages = [];
   late Friend _friend;
+  XFile? _image;
 
   @override
   void initState() {
@@ -88,6 +91,18 @@ class ChatCustomPage extends State<ChatPage> {
     } catch (e) {
       print(e.toString());
     }
+  }
+
+  Future<void> _pickImage() async {
+    final XFile? image = await _picker.pickImage(
+      source: ImageSource.gallery,
+      maxWidth: 800,
+      maxHeight: 800,
+      imageQuality: 85,
+    );
+    setState(() {
+      _image = image;
+    });
   }
 
   //==========================build UI==============================
@@ -295,20 +310,7 @@ class ChatCustomPage extends State<ChatPage> {
             },
           ),
           //============================picture button=========================
-          IconButton(
-            icon: Icon(Icons.image),
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                builder: (BuildContext context) {
-                  return SizedBox(
-                    height: screenHeight * 0.4,
-                    child: Text('data'),
-                  );
-                },
-              );
-            },
-          ),
+          IconButton(icon: Icon(Icons.image), onPressed: _pickImage),
         ],
       ),
     );
