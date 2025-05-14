@@ -1,11 +1,11 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:chat_app_demo/constants/style_constants.dart';
 import 'package:chat_app_demo/models/message.dart';
 import 'package:chat_app_demo/models/friend.dart';
+import 'package:chat_app_demo/models/DTOs/MessageDTO.dart';
 import 'package:chat_app_demo/services/token_service.dart';
-import 'package:chat_app_demo/services/user_service.dart';
+import 'package:chat_app_demo/services/message_service.dart';
 import 'package:intl/intl.dart';
 
 class ChatPage extends StatefulWidget {
@@ -27,7 +27,6 @@ class ChatCustomPage extends State<ChatPage> {
   void initState() {
     super.initState();
     _friend = widget.friend;
-
     _loadMessage();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -62,39 +61,34 @@ class ChatCustomPage extends State<ChatPage> {
   }
 
   //==========================handle logic==============================
-  Future<void> _handleInfo() async {
+  Future<void> _loadMessage() async {
     try {
       String token = await TokenService.getToken('user') as String;
-      var result = await UserService.getUser(token);
+      var result = await MessageService.getMessages(_friend.friendID, token);
       setState(() {
-        // _avatar = result.data.avatar;
+        _messages = result.data;
       });
+      print(result.data.length);
     } catch (e) {
       print(e.toString());
     }
   }
 
-  Future<void> _loadMessage() async {
+  Future<void> _sendMessage() async {
     try {
-      final String jsonString = await DefaultAssetBundle.of(
-        context,
-      ).loadString('assets/messages.txt');
-      final List<dynamic> jsonData = jsonDecode(jsonString) as List<dynamic>;
-      final List<Message> loadedMessages =
-          jsonData
-              .map(
-                (message) => Message.fromJson(message as Map<String, dynamic>),
-              )
-              .toList();
-
-      setState(() {
-        _messages =
-            loadedMessages
-                .where((mess) => mess.friendId == _friend.friendID)
-                .toList();
-      });
+      String token = await TokenService.getToken('user') as String;
+      MessageDTO dto = MessageDTO(content: _textEditingController.text);
+      var result = await MessageService.sendMessage(
+        token,
+        _friend.friendID,
+        dto,
+      );
+      _loadMessage();
+      print(
+        "${result.data.id} / ${result.data.content} / ${result.data.createdAt} ",
+      );
     } catch (e) {
-      print('Error loading messages: $e\n');
+      print(e.toString());
     }
   }
 
@@ -271,20 +265,8 @@ class ChatCustomPage extends State<ChatPage> {
                 suffixIcon: GestureDetector(
                   onTap: () {
                     if (_textEditingController.text.isNotEmpty) {
+                      _sendMessage();
                       setState(() {
-                        _messages.add(
-                          Message(
-                            id: (_messages.length + 1).toString(),
-                            myId: "1",
-                            friendId: _friend.friendID,
-                            files: [],
-                            content: _textEditingController.text,
-                            images: [],
-                            isSend: 1,
-                            createdAt: DateTime.now(),
-                            messageType: 1,
-                          ),
-                        );
                         _textEditingController.clear();
                         _scrollToEnd();
                       });

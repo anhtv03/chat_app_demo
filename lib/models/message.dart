@@ -1,7 +1,5 @@
 class Message {
   final String id;
-  final String friendId;
-  final String myId;
   final String? content;
   final List<String> files;
   final List<String> images;
@@ -11,8 +9,6 @@ class Message {
 
   Message({
     required this.id,
-    required this.myId,
-    required this.friendId,
     this.content,
     required this.files,
     required this.images,
@@ -24,28 +20,24 @@ class Message {
   factory Message.fromJson(Map<String, dynamic> json) {
     return Message(
       id: json['id'] as String,
-      myId: json['myId'] as String,
-      friendId: json['friendId'] as String,
-      files: List.from(json['files'] as List),
-      content: json['content'] as String,
-      images: List.from(json['images'] as List),
-      isSend: json['isSend'] as int,
-      createdAt: DateTime.parse(json['createdAt'] as String),
-      messageType: json['messageType'] as int,);
+      content: json['Content'] as String?,
+      files: (json['Files'] as List<dynamic>?)?.cast<String>() ?? [],
+      images: (json['Images'] as List<dynamic>?)?.cast<String>() ?? [],
+      isSend: json['isSend'] as int? ?? 0,
+      createdAt: DateTime.parse(json['CreatedAt'] as String),
+      messageType: json['MessageType'] as int? ?? 0,
+    );
   }
 
   Map<String, dynamic> toJson() {
     return {
       'id': id,
-      'myId': myId,
-      'friendId': friendId,
-      'files': files,
-      'content': content,
-      'images': images,
+      'Files': files,
+      'Content': content,
+      'Images': images,
       'isSend': isSend,
-      'createdAt': createdAt.toIso8601String(),
-      'messageType': messageType,
+      'CreatedAt': createdAt.toIso8601String(),
+      'MessageType': messageType,
     };
   }
 }
-
