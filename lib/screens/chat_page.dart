@@ -1,11 +1,15 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:chat_app_demo/constants/api_constants.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:chat_app_demo/constants/style_constants.dart';
 import 'package:chat_app_demo/models/message.dart';
 import 'package:chat_app_demo/models/friend.dart';
 import 'package:chat_app_demo/models/DTOs/message_dto.dart';
 import 'package:chat_app_demo/services/token_service.dart';
+import 'package:chat_app_demo/models/file_data.dart';
 import 'package:chat_app_demo/services/message_service.dart';
 import 'package:intl/intl.dart';
 
@@ -24,7 +28,6 @@ class ChatCustomPage extends State<ChatPage> {
   final ImagePicker _picker = ImagePicker();
   List<Message> _messages = [];
   late Friend _friend;
-  XFile? _image;
 
   @override
   void initState() {
@@ -75,19 +78,12 @@ class ChatCustomPage extends State<ChatPage> {
     }
   }
 
-  Future<void> _sendMessage(String content) async {
+  Future<void> _sendMessage(String? content, List<File>? files) async {
     try {
       String token = await TokenService.getToken('user') as String;
-      MessageDTO dto = MessageDTO(content: content);
-      var result = await MessageService.sendMessage(
-        token,
-        _friend.friendID,
-        dto,
-      );
+      MessageDTO dto = MessageDTO(content: content, files: files);
+      await MessageService.sendMessage(token, _friend.friendID, dto);
       _loadMessage();
-      // print(
-      //   "${result.data.id} / ${result.data.content} / ${result.data.createdAt} ",
-      // );
     } catch (e) {
       print(e.toString());
     }
@@ -100,9 +96,20 @@ class ChatCustomPage extends State<ChatPage> {
       maxHeight: 800,
       imageQuality: 85,
     );
-    setState(() {
-      _image = image;
-    });
+    if (image != null) {
+      await _sendMessage(null, [File(image.path)]);
+    }
+  }
+
+  Future<void> _pickFile() async {
+    FilePickerResult? result = await FilePicker.platform.pickFiles(
+      allowMultiple: true,
+    );
+
+    if (result != null) {
+      List<File> files = result.paths.map((path) => File(path!)).toList();
+      _sendMessage(null, files);
+    }
   }
 
   //==========================build UI==============================
@@ -151,6 +158,11 @@ class ChatCustomPage extends State<ChatPage> {
         itemCount: _messages.length,
         itemBuilder: (context, index) {
           final Message message = _messages[index];
+
+          print(
+            'ChatPage: Message $index: content=${message.content} images=${message.images}, files=${message.files}',
+          );
+
           return Padding(
             padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
             child: Align(
@@ -171,7 +183,7 @@ class ChatCustomPage extends State<ChatPage> {
                       padding: const EdgeInsets.only(right: 10),
                       child: StyleConstants.avatarFriend(null, true),
                     ),
-                  //=====================Content and Time=======================
+                  //=====================Content and Time==================
                   Column(
                     crossAxisAlignment:
                         message.messageType == 1
@@ -179,39 +191,60 @@ class ChatCustomPage extends State<ChatPage> {
                             : CrossAxisAlignment.start,
                     children: [
                       // Content message
-                      Container(
-                        constraints: BoxConstraints(
-                          maxWidth: MediaQuery.of(context).size.width * 0.7,
-                        ),
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color:
-                              message.messageType == 1
-                                  ? const Color.fromRGBO(32, 160, 144, 1)
-                                  : const Color.fromRGBO(242, 247, 251, 1),
-                          borderRadius: BorderRadius.only(
-                            bottomLeft: const Radius.circular(10),
-                            bottomRight: const Radius.circular(10),
-                            topLeft: Radius.circular(
-                              message.messageType == 1 ? 10 : 0,
-                            ),
-                            topRight: Radius.circular(
-                              message.messageType == 1 ? 0 : 10,
-                            ),
+                      if (message.content != null &&
+                          message.content!.isNotEmpty)
+                        Container(
+                          constraints: BoxConstraints(
+                            maxWidth: MediaQuery.of(context).size.width * 0.7,
                           ),
-                        ),
-                        child: Text(
-                          message.content.toString(),
-                          style: TextStyle(
+                          padding: const EdgeInsets.all(10),
+                          decoration: BoxDecoration(
                             color:
                                 message.messageType == 1
-                                    ? Colors.white
-                                    : Colors.black,
-                            fontSize: 14,
-                            fontWeight: FontWeight.w400,
+                                    ? const Color.fromRGBO(32, 160, 144, 1)
+                                    : const Color.fromRGBO(242, 247, 251, 1),
+                            borderRadius: BorderRadius.only(
+                              bottomLeft: const Radius.circular(10),
+                              bottomRight: const Radius.circular(10),
+                              topLeft: Radius.circular(
+                                message.messageType == 1 ? 10 : 0,
+                              ),
+                              topRight: Radius.circular(
+                                message.messageType == 1 ? 0 : 10,
+                              ),
+                            ),
+                          ),
+                          child: Text(
+                            message.content.toString(),
+                            style: TextStyle(
+                              color:
+                                  message.messageType == 1
+                                      ? Colors.white
+                                      : Colors.black,
+                              fontSize: 14,
+                              fontWeight: FontWeight.w400,
+                            ),
                           ),
                         ),
-                      ),
+                      if (message.images.isNotEmpty)
+                        ...message.images.map(
+                          (imageData) => Padding(
+                            padding: const EdgeInsets.only(top: 5),
+                            child:
+                                imageData.url.isNotEmpty
+                                    ? Image.network(
+                                      RouteConstants.getUrl(imageData.url),
+                                      fit: BoxFit.cover,
+                                      width: 200,
+                                      height: 200,
+                                    )
+                                    : SizedBox.shrink(),
+                          ),
+                        ),
+                      if (message.files.isNotEmpty)
+                        ...message.files.map(
+                          (fileData) => _buildFileField(fileData),
+                        ),
                       //====================Time message======================
                       Padding(
                         padding: const EdgeInsets.only(top: 2),
@@ -280,7 +313,7 @@ class ChatCustomPage extends State<ChatPage> {
                   onTap: () {
                     if (_textEditingController.text.isNotEmpty) {
                       final messageContent = _textEditingController.text;
-                      _sendMessage(messageContent);
+                      _sendMessage(messageContent, null);
                       setState(() {
                         _textEditingController.clear();
                       });
@@ -295,24 +328,57 @@ class ChatCustomPage extends State<ChatPage> {
             ),
           ),
           //============================file button=========================
-          IconButton(
-            icon: Icon(Icons.file_present),
-            onPressed: () {
-              showModalBottomSheet(
-                context: context,
-                builder: (BuildContext context) {
-                  return SizedBox(
-                    height: screenHeight * 0.4,
-                    child: Text('data'),
-                  );
-                },
-              );
-            },
-          ),
+          IconButton(icon: Icon(Icons.file_present), onPressed: _pickFile),
           //============================picture button=========================
           IconButton(icon: Icon(Icons.image), onPressed: _pickImage),
         ],
       ),
+    );
+  }
+
+  Widget _buildFileField(FileData fileData) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 5),
+      child:
+          fileData.url.isNotEmpty
+              ? GestureDetector(
+                onTap: () {
+                  print('Tải file: ${RouteConstants.getUrl(fileData.url)}');
+                },
+                child: Container(
+                  width: 200,
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: const Color.fromRGBO(242, 247, 251, 1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(color: Colors.grey.shade300, width: 1),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        Icons.insert_drive_file,
+                        color: Colors.blue,
+                        size: 30,
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          fileData.fileName.isNotEmpty
+                              ? fileData.fileName
+                              : fileData.url,
+                          style: const TextStyle(
+                            color: Colors.black,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                          ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              )
+              : SizedBox.shrink(),
     );
   }
 

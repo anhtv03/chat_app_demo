@@ -111,7 +111,7 @@ class LoginCustomPage extends State<LoginPage> {
 
       if (result.status == 1) {
         final token = result.data.token;
-        TokenService.saveToken('user', token);
+        await TokenService.saveToken('user', token);
         setState(() {
           _isLoading = false;
         });
@@ -122,7 +122,7 @@ class LoginCustomPage extends State<LoginPage> {
         _isLoading = false;
         String mess = e.toString().replaceAll('Exception: ', '');
         _errorMessage =
-            mess == 'Incorrect password'
+            mess == 'Incorrect password' || mess == 'Username not found'
                 ? 'Bạn nhập sai tên tài khoản hoặc mật khẩu!'
                 : 'Đăng nhập thất bại do lỗi hệ thống';
         print(e.toString());

@@ -56,12 +56,14 @@ class MessageService {
     );
     request.headers['Authorization'] = 'Bearer $token';
     request.fields['FriendID'] = friendId;
-    request.fields['Content'] = dto.content ?? '';
+    if (dto.content != null && dto.content!.isNotEmpty) {
+      request.fields['Content'] = dto.content!;
+    }
 
     if (dto.files != null && dto.files!.isNotEmpty) {
       for (var file in dto.files!) {
         request.files.add(
-          await http.MultipartFile.fromPath('Files', file.path),
+            await http.MultipartFile.fromPath('files', file.path),
         );
       }
     }
