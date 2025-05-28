@@ -1,4 +1,5 @@
 import 'package:chat_app_demo/models/file_data.dart';
+import 'package:intl/intl.dart';
 
 class Message {
   final String id;
@@ -37,5 +38,18 @@ class Message {
       createdAt: DateTime.parse(json['CreatedAt'] as String),
       messageType: json['MessageType'] as int? ?? 0,
     );
+  }
+
+  String getFormattedDate(DateTime createdAt) {
+    final now = DateTime.now();
+    final difference = now.difference(createdAt).inDays;
+
+    if (difference == 0) {
+      return 'Hôm nay';
+    } else if (difference == 1) {
+      return 'Hôm qua';
+    } else {
+      return DateFormat('dd/MM/yyyy').format(createdAt);
+    }
   }
 }

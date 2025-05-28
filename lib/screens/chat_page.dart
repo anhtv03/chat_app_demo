@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:chat_app_demo/constants/api_constants.dart';
@@ -28,18 +29,22 @@ class ChatCustomPage extends State<ChatPage> {
   final ImagePicker _picker = ImagePicker();
   List<Message> _messages = [];
   late Friend _friend;
+  DateTime? _lastTime;
+  late Timer _pollTimer;
 
   @override
   void initState() {
     super.initState();
     _friend = widget.friend;
     _loadMessage();
+    _startPoll();
   }
 
   @override
   void dispose() {
     _textEditingController.dispose();
     _scrollController.dispose();
+    _pollTimer.cancel();
     super.dispose();
   }
 
@@ -69,6 +74,7 @@ class ChatCustomPage extends State<ChatPage> {
       var result = await MessageService.getMessages(_friend.friendID, token);
       setState(() {
         _messages = result.data;
+        if (_messages.isNotEmpty) _lastTime = _messages.last.createdAt;
         WidgetsBinding.instance.addPostFrameCallback((_) {
           _scrollToEnd();
         });
@@ -83,7 +89,7 @@ class ChatCustomPage extends State<ChatPage> {
       String token = await TokenService.getToken('user') as String;
       MessageDTO dto = MessageDTO(content: content, files: files);
       await MessageService.sendMessage(token, _friend.friendID, dto);
-      _loadMessage();
+      await _loadMessage();
     } catch (e) {
       print(e.toString());
     }
@@ -109,6 +115,33 @@ class ChatCustomPage extends State<ChatPage> {
     if (result != null) {
       List<File> files = result.paths.map((path) => File(path!)).toList();
       _sendMessage(null, files);
+    }
+  }
+
+  Future<void> _checkNewMessage() async {
+    if (_lastTime == null) return;
+
+    try {
+      String token = await TokenService.getToken('user') as String;
+      var result = await MessageService.getMessages(
+        _friend.friendID,
+        token,
+        lastTime: _lastTime!.toIso8601String(),
+      );
+
+      setState(() {
+        final newMessages =
+            result.data.where((m) => m.createdAt.isAfter(_lastTime!)).toList();
+        if (newMessages.isNotEmpty) {
+          _messages.addAll(newMessages);
+          _lastTime = _messages.last.createdAt;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _scrollToEnd();
+          });
+        }
+      });
+    } catch (e) {
+      print(e.toString());
     }
   }
 
@@ -158,116 +191,153 @@ class ChatCustomPage extends State<ChatPage> {
         itemCount: _messages.length,
         itemBuilder: (context, index) {
           final Message message = _messages[index];
+          // print(
+          //   'ChatPage: Message $index: content=${message.content} images=${message.images}, files=${message.files}',
+          // );
 
-          print(
-            'ChatPage: Message $index: content=${message.content} images=${message.images}, files=${message.files}',
-          );
+          bool showDateHeader = _checkTimeTitle(index, message);
+          bool showTime = _checkShowTime(index, message);
 
-          return Padding(
-            padding: const EdgeInsets.symmetric(vertical: 5, horizontal: 10),
-            child: Align(
-              alignment:
-                  message.messageType == 1
-                      ? Alignment.centerRight
-                      : Alignment.centerLeft,
-              child: Row(
-                mainAxisAlignment:
-                    message.messageType == 1
-                        ? MainAxisAlignment.end
-                        : MainAxisAlignment.start,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  //=====================Avatar===========================
-                  if (message.messageType != 1)
-                    Padding(
-                      padding: const EdgeInsets.only(right: 10),
-                      child: StyleConstants.avatarFriend(null, true),
+          return Column(
+            children: [
+              if (showDateHeader)
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 10),
+                  child: Center(
+                    child: Text(
+                      message.getFormattedDate(message.createdAt),
+                      style: const TextStyle(
+                        color: Color.fromRGBO(121, 124, 123, 1),
+                        fontSize: 14,
+                        fontWeight: FontWeight.w400,
+                      ),
                     ),
-                  //=====================Content and Time==================
-                  Column(
-                    crossAxisAlignment:
+                  ),
+                ),
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  vertical: 5,
+                  horizontal: 10,
+                ),
+                child: Align(
+                  alignment:
+                      message.messageType == 1
+                          ? Alignment.centerRight
+                          : Alignment.centerLeft,
+                  child: Row(
+                    mainAxisAlignment:
                         message.messageType == 1
-                            ? CrossAxisAlignment.end
-                            : CrossAxisAlignment.start,
+                            ? MainAxisAlignment.end
+                            : MainAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      // Content message
-                      if (message.content != null &&
-                          message.content!.isNotEmpty)
-                        Container(
-                          constraints: BoxConstraints(
-                            maxWidth: MediaQuery.of(context).size.width * 0.7,
-                          ),
-                          padding: const EdgeInsets.all(10),
-                          decoration: BoxDecoration(
-                            color:
-                                message.messageType == 1
-                                    ? const Color.fromRGBO(32, 160, 144, 1)
-                                    : const Color.fromRGBO(242, 247, 251, 1),
-                            borderRadius: BorderRadius.only(
-                              bottomLeft: const Radius.circular(10),
-                              bottomRight: const Radius.circular(10),
-                              topLeft: Radius.circular(
-                                message.messageType == 1 ? 10 : 0,
+                      //=====================Avatar===========================
+                      if (message.messageType != 1)
+                        Padding(
+                          padding: const EdgeInsets.only(right: 10),
+                          child: StyleConstants.avatarFriend(null, true),
+                        ),
+                      //=====================Content and Time==================
+                      Column(
+                        crossAxisAlignment:
+                            message.messageType == 1
+                                ? CrossAxisAlignment.end
+                                : CrossAxisAlignment.start,
+                        children: [
+                          // Content message
+                          if (message.content != null &&
+                              message.content!.isNotEmpty)
+                            Container(
+                              constraints: BoxConstraints(
+                                maxWidth:
+                                    MediaQuery.of(context).size.width * 0.7,
                               ),
-                              topRight: Radius.circular(
-                                message.messageType == 1 ? 0 : 10,
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color:
+                                    message.messageType == 1
+                                        ? const Color.fromRGBO(32, 160, 144, 1)
+                                        : const Color.fromRGBO(
+                                          242,
+                                          247,
+                                          251,
+                                          1,
+                                        ),
+                                borderRadius: BorderRadius.only(
+                                  bottomLeft: const Radius.circular(10),
+                                  bottomRight: const Radius.circular(10),
+                                  topLeft: Radius.circular(
+                                    message.messageType == 1 ? 10 : 0,
+                                  ),
+                                  topRight: Radius.circular(
+                                    message.messageType == 1 ? 0 : 10,
+                                  ),
+                                ),
                               ),
-                            ),
-                          ),
-                          child: Text(
-                            message.content.toString(),
-                            style: TextStyle(
-                              color:
-                                  message.messageType == 1
-                                      ? Colors.white
-                                      : Colors.black,
-                              fontSize: 14,
-                              fontWeight: FontWeight.w400,
-                            ),
-                          ),
-                        ),
-                      if (message.images.isNotEmpty)
-                        ...message.images.map(
-                          (imageData) => Padding(
-                            padding: const EdgeInsets.only(top: 5),
-                            child:
-                                imageData.url.isNotEmpty
-                                    ? Image.network(
-                                      RouteConstants.getUrl(imageData.url),
-                                      fit: BoxFit.cover,
-                                      width: 200,
-                                      height: 200,
-                                    )
-                                    : SizedBox.shrink(),
-                          ),
-                        ),
-                      if (message.files.isNotEmpty)
-                        ...message.files.map(
-                          (fileData) => _buildFileField(fileData),
-                        ),
-                      //====================Time message======================
-                      Padding(
-                        padding: const EdgeInsets.only(top: 2),
-                        child: SizedBox(
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: Text(
-                              DateFormat('h:mm a').format(message.createdAt),
-                              style: const TextStyle(
-                                color: Color.fromRGBO(121, 124, 123, 1),
-                                fontSize: 12,
-                                fontWeight: FontWeight.w100,
-                                fontStyle: FontStyle.italic,
+                              child: Text(
+                                message.content.toString(),
+                                style: TextStyle(
+                                  color:
+                                      message.messageType == 1
+                                          ? Colors.white
+                                          : Colors.black,
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w400,
+                                ),
                               ),
                             ),
-                          ),
-                        ),
+                          // Images
+                          if (message.images.isNotEmpty)
+                            ...message.images.map(
+                              (imageData) => Padding(
+                                padding: const EdgeInsets.only(top: 5),
+                                child:
+                                    imageData.url.isNotEmpty
+                                        ? Image.network(
+                                          RouteConstants.getUrl(imageData.url),
+                                          fit: BoxFit.cover,
+                                          width: 200,
+                                          height: 200,
+                                        )
+                                        : const SizedBox.shrink(),
+                              ),
+                            ),
+                          // Files
+                          if (message.files.isNotEmpty)
+                            ...message.files.map(
+                              (fileData) => _buildFileField(fileData),
+                            ),
+                          //====================Time message======================
+                          if (showTime)
+                            Padding(
+                              padding: const EdgeInsets.only(top: 2),
+                              child: SizedBox(
+                                child: Align(
+                                  alignment:
+                                      message.messageType == 1
+                                          ? Alignment.centerRight
+                                          : Alignment.centerLeft,
+                                  child: Text(
+                                    DateFormat(
+                                      'h:mm a',
+                                    ).format(message.createdAt),
+                                    style: const TextStyle(
+                                      color: Color.fromRGBO(121, 124, 123, 1),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.w100,
+                                      fontStyle: FontStyle.italic,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ],
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           );
         },
       ),
@@ -390,5 +460,57 @@ class ChatCustomPage extends State<ChatPage> {
         curve: Curves.easeOutBack,
       );
     }
+  }
+
+  //==========================handle validation==============================
+  bool _checkTimeTitle(var index, Message message) {
+    if (index > 0) {
+      final prevMessage = _messages[index - 1];
+      final currentDay = DateTime(
+        message.createdAt.year,
+        message.createdAt.month,
+        message.createdAt.day,
+      );
+      final prevDay = DateTime(
+        prevMessage.createdAt.year,
+        prevMessage.createdAt.month,
+        prevMessage.createdAt.day,
+      );
+      if (currentDay == prevDay) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  bool _checkShowTime(var index, Message message) {
+    if (index < _messages.length - 1) {
+      final nextMessage = _messages[index + 1];
+      final currentTime = DateTime(
+        message.createdAt.year,
+        message.createdAt.month,
+        message.createdAt.day,
+        message.createdAt.hour,
+        message.createdAt.minute,
+      );
+      final nextTime = DateTime(
+        nextMessage.createdAt.year,
+        nextMessage.createdAt.month,
+        nextMessage.createdAt.day,
+        nextMessage.createdAt.hour,
+        nextMessage.createdAt.minute,
+      );
+      if (currentTime == nextTime &&
+          message.messageType == nextMessage.messageType) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  void _startPoll() {
+    _pollTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
+      await _checkNewMessage();
+    });
   }
 }

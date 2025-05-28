@@ -111,7 +111,6 @@ class HomeCustomPage extends State<HomePage> {
         _friends = result.data;
         _filteredFriends = _friends;
       });
-      print("home page: friend list size: ${_friends.length}");
     } catch (e) {
       print("home page: error when get friend: ${e.toString()}");
     }

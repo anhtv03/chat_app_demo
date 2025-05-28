@@ -26,12 +26,16 @@ class MessageService {
 
   static Future<ResponseList<Message>> getMessages(
     String friendId,
-    String token,
-  ) async {
+    String token, {
+    String? lastTime,
+  }) async {
+    final url =
+        lastTime != null
+            ? '/message/get-message?FriendID=$friendId&lastTime=$lastTime'
+            : '/message/get-message?FriendID=$friendId';
+
     final res = await http.get(
-      Uri.parse(
-        RouteConstants.getUrl("/message/get-message?FriendID=$friendId"),
-      ),
+      Uri.parse(RouteConstants.getUrl(url)),
       headers: {'Authorization': 'Bearer $token'},
     );
     final body = jsonDecode(res.body) as Map<String, dynamic>;
@@ -63,7 +67,7 @@ class MessageService {
     if (dto.files != null && dto.files!.isNotEmpty) {
       for (var file in dto.files!) {
         request.files.add(
-            await http.MultipartFile.fromPath('files', file.path),
+          await http.MultipartFile.fromPath('files', file.path),
         );
       }
     }
