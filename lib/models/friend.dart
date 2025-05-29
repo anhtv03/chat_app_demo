@@ -15,11 +15,20 @@ class Friend {
 
   factory Friend.fromJson(Map<String, dynamic> json) {
     return Friend(
-      friendID: json['FriendID'] as String,
-      fullName: json['FullName'] as String,
-      username: json['Username'] as String,
+      friendID: json['FriendID']?.toString() ?? '',
+      fullName: json['FullName']?.toString() ?? 'không có tên',
+      username: json['Username']?.toString() ?? 'không có username',
       avatar: json['Avatar'] as String?,
-      isOnline: json['isOnline'] as bool,
+      isOnline: _parseIsOnline(json['isOnline'])
     );
+  }
+
+  static bool _parseIsOnline(dynamic value) {
+    if (value is bool) {
+      return value;
+    } else if (value is int) {
+      return value == 1;
+    }
+    return false;
   }
 }

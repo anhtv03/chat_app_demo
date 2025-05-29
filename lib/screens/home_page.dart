@@ -112,7 +112,7 @@ class HomeCustomPage extends State<HomePage> {
         _filteredFriends = _friends;
       });
     } catch (e) {
-      print("home page: error when get friend: ${e.toString()}");
+      print(e.toString());
     }
   }
 

@@ -14,6 +14,7 @@ class MessageService {
       headers: {'Authorization': 'Bearer $token'},
     );
     final body = jsonDecode(res.body) as Map<String, dynamic>;
+    print(body);
     if (res.statusCode == 200) {
       return ResponseList.fromJson(
         body,
