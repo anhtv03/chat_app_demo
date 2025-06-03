@@ -10,9 +10,9 @@ import 'package:chat_app_demo/models/message.dart';
 import 'package:chat_app_demo/models/friend.dart';
 import 'package:chat_app_demo/models/DTOs/message_dto.dart';
 import 'package:chat_app_demo/services/token_service.dart';
-import 'package:chat_app_demo/models/file_data.dart';
 import 'package:chat_app_demo/services/message_service.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class ChatPage extends StatefulWidget {
   final Friend friend;
@@ -37,14 +37,14 @@ class ChatCustomPage extends State<ChatPage> {
     super.initState();
     _friend = widget.friend;
     _loadMessage();
-    _startPoll();
+    // _startPoll();
   }
 
   @override
   void dispose() {
     _textEditingController.dispose();
     _scrollController.dispose();
-    _pollTimer.cancel();
+    // _pollTimer.cancel();
     super.dispose();
   }
 
@@ -111,7 +111,6 @@ class ChatCustomPage extends State<ChatPage> {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       allowMultiple: true,
     );
-
     if (result != null) {
       List<File> files = result.paths.map((path) => File(path!)).toList();
       _sendMessage(null, files);
@@ -216,7 +215,7 @@ class ChatCustomPage extends State<ChatPage> {
                 ),
               Padding(
                 padding: const EdgeInsets.symmetric(
-                  vertical: 5,
+                  vertical: 3,
                   horizontal: 10,
                 ),
                 child: Align(
@@ -233,105 +232,62 @@ class ChatCustomPage extends State<ChatPage> {
                     children: [
                       //=====================Avatar===========================
                       if (message.messageType != 1)
-                        Padding(
-                          padding: const EdgeInsets.only(right: 10),
-                          child: StyleConstants.avatarFriend(null, true),
+                        Container(
+                          width: (50 + 10),
+                          child:
+                              _checkShowAvatar(index)
+                                  ? Padding(
+                                    padding: const EdgeInsets.only(
+                                      right: 10,
+                                      bottom: 0,
+                                    ),
+                                    child: StyleConstants.avatarFriend(
+                                      _friend.avatar,
+                                      _friend.isOnline,
+                                    ),
+                                  )
+                                  : const SizedBox.shrink(),
                         ),
                       //=====================Content and Time==================
-                      Column(
-                        crossAxisAlignment:
-                            message.messageType == 1
-                                ? CrossAxisAlignment.end
-                                : CrossAxisAlignment.start,
-                        children: [
-                          // Content message
-                          if (message.content != null &&
-                              message.content!.isNotEmpty)
-                            Container(
-                              constraints: BoxConstraints(
-                                maxWidth:
-                                    MediaQuery.of(context).size.width * 0.7,
-                              ),
-                              padding: const EdgeInsets.all(10),
-                              decoration: BoxDecoration(
-                                color:
-                                    message.messageType == 1
-                                        ? const Color.fromRGBO(32, 160, 144, 1)
-                                        : const Color.fromRGBO(
-                                          242,
-                                          247,
-                                          251,
-                                          1,
-                                        ),
-                                borderRadius: BorderRadius.only(
-                                  bottomLeft: const Radius.circular(10),
-                                  bottomRight: const Radius.circular(10),
-                                  topLeft: Radius.circular(
-                                    message.messageType == 1 ? 10 : 0,
-                                  ),
-                                  topRight: Radius.circular(
-                                    message.messageType == 1 ? 0 : 10,
-                                  ),
-                                ),
-                              ),
-                              child: Text(
-                                message.content.toString(),
-                                style: TextStyle(
-                                  color:
-                                      message.messageType == 1
-                                          ? Colors.white
-                                          : Colors.black,
-                                  fontSize: 14,
-                                  fontWeight: FontWeight.w400,
-                                ),
-                              ),
-                            ),
-                          // Images
-                          if (message.images.isNotEmpty)
-                            ...message.images.map(
-                              (imageData) => Padding(
-                                padding: const EdgeInsets.only(top: 5),
-                                child:
-                                    imageData.url.isNotEmpty
-                                        ? Image.network(
-                                          RouteConstants.getUrl(imageData.url),
-                                          fit: BoxFit.cover,
-                                          width: 200,
-                                          height: 200,
-                                        )
-                                        : const SizedBox.shrink(),
-                              ),
-                            ),
-                          // Files
-                          if (message.files.isNotEmpty)
-                            ...message.files.map(
-                              (fileData) => _buildFileField(fileData),
-                            ),
-                          //====================Time message======================
-                          if (showTime)
-                            Padding(
-                              padding: const EdgeInsets.only(top: 2),
-                              child: SizedBox(
-                                child: Align(
-                                  alignment:
-                                      message.messageType == 1
-                                          ? Alignment.centerRight
-                                          : Alignment.centerLeft,
-                                  child: Text(
-                                    DateFormat(
-                                      'h:mm a',
-                                    ).format(message.createdAt),
-                                    style: const TextStyle(
-                                      color: Color.fromRGBO(121, 124, 123, 1),
-                                      fontSize: 12,
-                                      fontWeight: FontWeight.w100,
-                                      fontStyle: FontStyle.italic,
+                      Flexible(
+                        child: Column(
+                          crossAxisAlignment:
+                              message.messageType == 1
+                                  ? CrossAxisAlignment.end
+                                  : CrossAxisAlignment.start,
+                          children: [
+                            // Content message
+                            if (message.content != null &&
+                                message.content!.isNotEmpty)
+                              _buildMessageField(message),
+                            // Images
+                            _buildFileField(message),
+                            //====================Time message======================
+                            if (showTime)
+                              Padding(
+                                padding: const EdgeInsets.only(top: 2),
+                                child: SizedBox(
+                                  child: Align(
+                                    alignment:
+                                        message.messageType == 1
+                                            ? Alignment.centerRight
+                                            : Alignment.centerLeft,
+                                    child: Text(
+                                      DateFormat(
+                                        'h:mm a',
+                                      ).format(message.createdAt),
+                                      style: const TextStyle(
+                                        color: Color.fromRGBO(121, 124, 123, 1),
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w100,
+                                        fontStyle: FontStyle.italic,
+                                      ),
                                     ),
                                   ),
                                 ),
                               ),
-                            ),
-                        ],
+                          ],
+                        ),
                       ),
                     ],
                   ),
@@ -353,6 +309,7 @@ class ChatCustomPage extends State<ChatPage> {
           IconButton(
             icon: Icon(Icons.insert_emoticon, color: Colors.black),
             onPressed: () {
+              FocusScope.of(context).unfocus();
               showModalBottomSheet(
                 context: context,
                 builder: (BuildContext context) {
@@ -406,14 +363,109 @@ class ChatCustomPage extends State<ChatPage> {
     );
   }
 
-  Widget _buildFileField(FileData fileData) {
+  Widget _buildFileField(Message message) {
+    List<Widget> widgets = [];
+
+    if (message.images.isNotEmpty) {
+      for (final imageData in message.images) {
+        if (imageData.url.isNotEmpty) {
+          if (_checkImage(imageData.url)) {
+            widgets.add(_buildImage(imageData.url));
+          }
+        }
+      }
+    }
+
+    // Files
+    if (message.files.isNotEmpty) {
+      for (final fileData in message.files) {
+        if (fileData.url.isNotEmpty) {
+          if (_checkImage(fileData.url)) {
+            widgets.add(_buildImage(fileData.url));
+          } else {
+            widgets.add(_buildFile(fileData.url, fileData.fileName));
+          }
+        }
+      }
+    }
+
+    if (widgets.isEmpty) return const SizedBox.shrink();
+    return Column(
+      crossAxisAlignment:
+          message.messageType == 1
+              ? CrossAxisAlignment.end
+              : CrossAxisAlignment.start,
+      children: widgets,
+    );
+  }
+
+  Widget _buildMessageField(Message message) {
+    return Container(
+      constraints: BoxConstraints(
+        maxWidth: MediaQuery.of(context).size.width * 0.7,
+      ),
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color:
+            message.messageType == 1
+                ? const Color.fromRGBO(32, 160, 144, 1)
+                : const Color.fromRGBO(242, 247, 251, 1),
+        borderRadius: BorderRadius.only(
+          bottomLeft: const Radius.circular(10),
+          bottomRight: const Radius.circular(10),
+          topLeft: Radius.circular(message.messageType == 1 ? 10 : 0),
+          topRight: Radius.circular(message.messageType == 1 ? 0 : 10),
+        ),
+      ),
+      child: Text(
+        message.content.toString(),
+        style: TextStyle(
+          color: message.messageType == 1 ? Colors.white : Colors.black,
+          fontSize: 14,
+          fontWeight: FontWeight.w400,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildImage(String url) {
     return Padding(
       padding: const EdgeInsets.only(top: 5),
       child:
-          fileData.url.isNotEmpty
+          url.isNotEmpty
+              ? Image.network(
+                RouteConstants.getUrl(url),
+                fit: BoxFit.cover,
+                width: 200,
+                height: 200,
+              )
+              : const SizedBox.shrink(),
+    );
+  }
+
+  Widget _buildFile(String url, String fileName) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 5),
+      child:
+          url.isNotEmpty
               ? GestureDetector(
-                onTap: () {
-                  print('Tải file: ${RouteConstants.getUrl(fileData.url)}');
+                onTap: () async {
+                  print('Tải file: ${RouteConstants.getUrl(url)}');
+                  try {
+                    if (await canLaunchUrl(
+                      Uri.parse(RouteConstants.getUrl(url)),
+                    )) {
+                      launchUrl(Uri.parse(RouteConstants.getUrl(url)));
+                    } else {
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text('Không thể mở file')),
+                      );
+                    }
+                  } catch (e) {
+                    ScaffoldMessenger.of(
+                      context,
+                    ).showSnackBar(SnackBar(content: Text('Đã có lỗi xảy ra')));
+                  }
                 },
                 child: Container(
                   width: 200,
@@ -433,9 +485,7 @@ class ChatCustomPage extends State<ChatPage> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: Text(
-                          fileData.fileName.isNotEmpty
-                              ? fileData.fileName
-                              : fileData.url,
+                          fileName.isNotEmpty ? fileName : url,
                           style: const TextStyle(
                             color: Colors.black,
                             fontSize: 14,
@@ -476,7 +526,7 @@ class ChatCustomPage extends State<ChatPage> {
         prevMessage.createdAt.month,
         prevMessage.createdAt.day,
       );
-      if (currentDay == prevDay) {
+      if (currentDay.isAtSameMomentAs(prevDay)) {
         return false;
       }
     }
@@ -504,6 +554,31 @@ class ChatCustomPage extends State<ChatPage> {
           message.messageType == nextMessage.messageType) {
         return false;
       }
+    }
+    return true;
+  }
+
+  bool _checkImage(String url) {
+    if (url.isNotEmpty) {
+      final String urlLower = url.toLowerCase();
+      final List<String> imageTypes = ['jpg', 'jpeg', 'png', 'gif'];
+      for (final item in imageTypes) {
+        if (urlLower.endsWith(item)) {
+          return true;
+        }
+      }
+    }
+    return false;
+  }
+
+  bool _checkShowAvatar(int index) {
+    if (index == 0) return true;
+    final prevMessage = _messages[index - 1];
+    final curMessage = _messages[index];
+    if (curMessage.messageType == prevMessage.messageType &&
+        curMessage.createdAt.difference(prevMessage.createdAt).inMinutes < 2 &&
+        !_checkTimeTitle(index, curMessage)) {
+      return false;
     }
     return true;
   }
