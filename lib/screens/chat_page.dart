@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:chat_app_demo/constants/api_constants.dart';
 import 'package:emoji_picker_flutter/emoji_picker_flutter.dart';
@@ -12,7 +13,9 @@ import 'package:chat_app_demo/models/DTOs/message_dto.dart';
 import 'package:chat_app_demo/services/token_service.dart';
 import 'package:chat_app_demo/services/message_service.dart';
 import 'package:intl/intl.dart';
+import 'package:saver_gallery/saver_gallery.dart';
 import 'package:url_launcher/url_launcher.dart';
+import 'package:dio/dio.dart';
 
 class ChatPage extends StatefulWidget {
   final Friend friend;
@@ -139,6 +142,37 @@ class ChatCustomPage extends State<ChatPage> {
           });
         }
       });
+    } catch (e) {
+      print(e.toString());
+    }
+  }
+
+  Future<void> _downloadImage(String url) async {
+    try {
+      var response = await Dio().get(
+        RouteConstants.getUrl(url),
+        options: Options(responseType: ResponseType.bytes),
+      );
+
+      final result = await SaverGallery.saveImage(
+        Uint8List.fromList(response.data),
+        fileName: '${DateTime.now().millisecondsSinceEpoch}.jpg',
+        androidRelativePath: "Pictures",
+        quality: 80,
+        skipIfExists: true,
+      );
+
+      print(result);
+
+      if (result.isSuccess) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Đã lưu ảnh vào thư viện')),
+        );
+      } else {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(const SnackBar(content: Text('Lỗi khi lưu ảnh')));
+      }
     } catch (e) {
       print(e.toString());
     }
@@ -429,17 +463,63 @@ class ChatCustomPage extends State<ChatPage> {
   }
 
   Widget _buildImage(String url) {
-    return Padding(
-      padding: const EdgeInsets.only(top: 5),
-      child:
-          url.isNotEmpty
-              ? Image.network(
-                RouteConstants.getUrl(url),
-                fit: BoxFit.cover,
-                width: 200,
-                height: 200,
-              )
-              : const SizedBox.shrink(),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder:
+                (_) => Scaffold(
+                  backgroundColor: Colors.black,
+                  body: GestureDetector(
+                    onTap: () {
+                      Navigator.pop(context);
+                    },
+                    child: Center(
+                      child: InteractiveViewer(
+                        child: Image.network(RouteConstants.getUrl(url)),
+                      ),
+                    ),
+                  ),
+                ),
+          ),
+        );
+      },
+      onLongPress: () {
+        showDialog(
+          context: context,
+          builder:
+              (item) => AlertDialog(
+                title: Text("Tải ảnh"),
+                content: Text("Bạn có muốn tải ảnh này không?"),
+                actions: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(context),
+                    child: Text("Hủy"),
+                  ),
+                  TextButton(
+                    onPressed: () {
+                      Navigator.pop(context);
+                      _downloadImage(url);
+                    },
+                    child: Text("Tải xuống"),
+                  ),
+                ],
+              ),
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.only(top: 5),
+        child:
+            url.isNotEmpty
+                ? Image.network(
+                  RouteConstants.getUrl(url),
+                  fit: BoxFit.cover,
+                  width: 200,
+                  height: 200,
+                )
+                : const SizedBox.shrink(),
+      ),
     );
   }
 
