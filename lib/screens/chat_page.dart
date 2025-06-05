@@ -13,6 +13,7 @@ import 'package:chat_app_demo/models/DTOs/message_dto.dart';
 import 'package:chat_app_demo/services/token_service.dart';
 import 'package:chat_app_demo/services/message_service.dart';
 import 'package:intl/intl.dart';
+import 'package:permission_handler/permission_handler.dart';
 import 'package:saver_gallery/saver_gallery.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
@@ -88,6 +89,7 @@ class ChatCustomPage extends State<ChatPage> {
   }
 
   Future<void> _sendMessage(String? content, List<File>? files) async {
+
     try {
       String token = await TokenService.getToken('user') as String;
       MessageDTO dto = MessageDTO(content: content, files: files);
@@ -148,33 +150,40 @@ class ChatCustomPage extends State<ChatPage> {
   }
 
   Future<void> _downloadImage(String url) async {
-    try {
-      var response = await Dio().get(
-        RouteConstants.getUrl(url),
-        options: Options(responseType: ResponseType.bytes),
-      );
-
-      final result = await SaverGallery.saveImage(
-        Uint8List.fromList(response.data),
-        fileName: '${DateTime.now().millisecondsSinceEpoch}.jpg',
-        androidRelativePath: "Pictures",
-        quality: 80,
-        skipIfExists: true,
-      );
-
-      print(result);
-
-      if (result.isSuccess) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Đã lưu ảnh vào thư viện')),
+    var status = await Permission.storage.request();
+    if (status.isGranted) {
+      try {
+        var response = await Dio().get(
+          RouteConstants.getUrl(url),
+          options: Options(responseType: ResponseType.bytes),
         );
-      } else {
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(const SnackBar(content: Text('Lỗi khi lưu ảnh')));
+
+        final result = await SaverGallery.saveImage(
+          Uint8List.fromList(response.data),
+          fileName: '${DateTime.now().millisecondsSinceEpoch}.jpg',
+          androidRelativePath: "Pictures",
+          quality: 80,
+          skipIfExists: true,
+        );
+
+        print(result);
+
+        if (result.isSuccess) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Đã lưu ảnh vào thư viện')),
+          );
+        } else {
+          ScaffoldMessenger.of(
+            context,
+          ).showSnackBar(const SnackBar(content: Text('Lỗi khi lưu ảnh')));
+        }
+      } catch (e) {
+        print(e.toString());
       }
-    } catch (e) {
-      print(e.toString());
+    } else {
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Quyền lưu trữ bị từ chối')));
     }
   }
 
