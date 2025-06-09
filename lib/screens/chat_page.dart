@@ -17,6 +17,8 @@ import 'package:permission_handler/permission_handler.dart';
 import 'package:saver_gallery/saver_gallery.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:dio/dio.dart';
+import 'package:hive/hive.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 class ChatPage extends StatefulWidget {
   final Friend friend;
@@ -31,24 +33,20 @@ class ChatCustomPage extends State<ChatPage> {
   final TextEditingController _textEditingController = TextEditingController();
   final ScrollController _scrollController = ScrollController();
   final ImagePicker _picker = ImagePicker();
-  List<Message> _messages = [];
   late Friend _friend;
-  DateTime? _lastTime;
-  late Timer _pollTimer;
+  late Box<Message> _messageBox;
 
   @override
   void initState() {
     super.initState();
     _friend = widget.friend;
-    _loadMessage();
-    // _startPoll();
+    _openBoxAndLoadMessage();
   }
 
   @override
   void dispose() {
     _textEditingController.dispose();
     _scrollController.dispose();
-    // _pollTimer.cancel();
     super.dispose();
   }
 
@@ -72,29 +70,61 @@ class ChatCustomPage extends State<ChatPage> {
   }
 
   //==========================handle logic==============================
-  Future<void> _loadMessage() async {
+  Future<void> _openBoxAndLoadMessage() async {
+    _messageBox = await Hive.openBox<Message>('messages_${_friend.friendID}');
+    setState(() {});
+
     try {
       String token = await TokenService.getToken('user') as String;
-      var result = await MessageService.getMessages(_friend.friendID, token);
-      setState(() {
-        _messages = result.data;
-        if (_messages.isNotEmpty) _lastTime = _messages.last.createdAt;
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          _scrollToEnd();
-        });
-      });
+      DateTime? lastTime;
+      if (_messageBox.values.isNotEmpty) {
+        lastTime = _messageBox.values.last.createdAt;
+      }
+
+      var result = await MessageService.getMessages(
+        _friend.friendID,
+        token,
+        lastTime: lastTime?.toIso8601String(),
+      );
+
+      for (var item in result.data) {
+        await _messageBox.put(item.id, item);
+      }
+
+      // WidgetsBinding.instance.addPostFrameCallback((_) {
+      //   _scrollToEnd();
+      // });
     } catch (e) {
       print(e.toString());
     }
   }
 
   Future<void> _sendMessage(String? content, List<File>? files) async {
+    final tempId = DateTime.now().millisecondsSinceEpoch.toString();
+
+    final tempMessage = Message(
+      id: tempId,
+      content: content,
+      images: [],
+      files: [],
+      messageType: 1,
+      createdAt: DateTime.now(),
+      isSend: 0,
+    );
+    await _messageBox.put(tempId, tempMessage);
+    _textEditingController.clear();
 
     try {
       String token = await TokenService.getToken('user') as String;
       MessageDTO dto = MessageDTO(content: content, files: files);
-      await MessageService.sendMessage(token, _friend.friendID, dto);
-      await _loadMessage();
+      var sentMessage = await MessageService.sendMessage(
+        token,
+        _friend.friendID,
+        dto,
+      );
+
+      await _messageBox.delete(tempId);
+      await _messageBox.put(sentMessage.data.id, sentMessage.data);
     } catch (e) {
       print(e.toString());
     }
@@ -119,33 +149,6 @@ class ChatCustomPage extends State<ChatPage> {
     if (result != null) {
       List<File> files = result.paths.map((path) => File(path!)).toList();
       _sendMessage(null, files);
-    }
-  }
-
-  Future<void> _checkNewMessage() async {
-    if (_lastTime == null) return;
-
-    try {
-      String token = await TokenService.getToken('user') as String;
-      var result = await MessageService.getMessages(
-        _friend.friendID,
-        token,
-        lastTime: _lastTime!.toIso8601String(),
-      );
-
-      setState(() {
-        final newMessages =
-            result.data.where((m) => m.createdAt.isAfter(_lastTime!)).toList();
-        if (newMessages.isNotEmpty) {
-          _messages.addAll(newMessages);
-          _lastTime = _messages.last.createdAt;
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _scrollToEnd();
-          });
-        }
-      });
-    } catch (e) {
-      print(e.toString());
     }
   }
 
@@ -225,118 +228,140 @@ class ChatCustomPage extends State<ChatPage> {
   }
 
   Widget _contentMessage() {
+    if (!Hive.isBoxOpen('messages_${_friend.friendID}')) {
+      return Center(child: CircularProgressIndicator());
+    }
+
     return Flexible(
-      child: ListView.builder(
-        physics: const ClampingScrollPhysics(),
-        padding: const EdgeInsets.only(bottom: 50),
-        controller: _scrollController,
-        itemCount: _messages.length,
-        itemBuilder: (context, index) {
-          final Message message = _messages[index];
-          // print(
-          //   'ChatPage: Message $index: content=${message.content} images=${message.images}, files=${message.files}',
-          // );
+      child: ValueListenableBuilder<Box<Message>>(
+        valueListenable:
+            Hive.box<Message>('messages_${_friend.friendID}').listenable(),
+        builder: (context, box, _) {
+          final messages =
+              box.values.toList()
+                ..sort((a, b) => b.createdAt.compareTo(a.createdAt));
+          if (messages.isEmpty) {
+            return Center(child: Text("Hãy bắt đầu cuộc trò truyện!"));
+          }
+          return ListView.builder(
+            reverse: true,
+            physics: const ClampingScrollPhysics(),
+            padding: const EdgeInsets.only(bottom: 50),
+            controller: _scrollController,
+            itemCount: messages.length,
+            itemBuilder: (context, index) {
+              final Message message = messages[index];
+              // print(
+              //   'ChatPage: Message $index: content=${message.content} images=${message.images}, files=${message.files}',
+              // );
 
-          bool showDateHeader = _checkTimeTitle(index, message);
-          bool showTime = _checkShowTime(index, message);
+              bool showDateHeader = _checkTimeTitle(index, message, messages);
+              bool showTime = _checkShowTime(index, message, messages);
 
-          return Column(
-            children: [
-              if (showDateHeader)
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 10),
-                  child: Center(
-                    child: Text(
-                      message.getFormattedDate(message.createdAt),
-                      style: const TextStyle(
-                        color: Color.fromRGBO(121, 124, 123, 1),
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
+              return Column(
+                children: [
+                  if (showDateHeader)
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 10),
+                      child: Center(
+                        child: Text(
+                          message.getFormattedDate(message.createdAt),
+                          style: const TextStyle(
+                            color: Color.fromRGBO(121, 124, 123, 1),
+                            fontSize: 14,
+                            fontWeight: FontWeight.w400,
+                          ),
+                        ),
                       ),
                     ),
-                  ),
-                ),
-              Padding(
-                padding: const EdgeInsets.symmetric(
-                  vertical: 3,
-                  horizontal: 10,
-                ),
-                child: Align(
-                  alignment:
-                      message.messageType == 1
-                          ? Alignment.centerRight
-                          : Alignment.centerLeft,
-                  child: Row(
-                    mainAxisAlignment:
-                        message.messageType == 1
-                            ? MainAxisAlignment.end
-                            : MainAxisAlignment.start,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      //=====================Avatar===========================
-                      if (message.messageType != 1)
-                        Container(
-                          width: (50 + 10),
-                          child:
-                              _checkShowAvatar(index)
-                                  ? Padding(
-                                    padding: const EdgeInsets.only(
-                                      right: 10,
-                                      bottom: 0,
-                                    ),
-                                    child: StyleConstants.avatarFriend(
-                                      _friend.avatar,
-                                      _friend.isOnline,
-                                    ),
-                                  )
-                                  : const SizedBox.shrink(),
-                        ),
-                      //=====================Content and Time==================
-                      Flexible(
-                        child: Column(
-                          crossAxisAlignment:
-                              message.messageType == 1
-                                  ? CrossAxisAlignment.end
-                                  : CrossAxisAlignment.start,
-                          children: [
-                            // Content message
-                            if (message.content != null &&
-                                message.content!.isNotEmpty)
-                              _buildMessageField(message),
-                            // Images
-                            _buildFileField(message),
-                            //====================Time message======================
-                            if (showTime)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 2),
-                                child: SizedBox(
-                                  child: Align(
-                                    alignment:
-                                        message.messageType == 1
-                                            ? Alignment.centerRight
-                                            : Alignment.centerLeft,
-                                    child: Text(
-                                      DateFormat(
-                                        'h:mm a',
-                                      ).format(message.createdAt),
-                                      style: const TextStyle(
-                                        color: Color.fromRGBO(121, 124, 123, 1),
-                                        fontSize: 12,
-                                        fontWeight: FontWeight.w100,
-                                        fontStyle: FontStyle.italic,
+                  Padding(
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 3,
+                      horizontal: 10,
+                    ),
+                    child: Align(
+                      alignment:
+                          message.messageType == 1
+                              ? Alignment.centerRight
+                              : Alignment.centerLeft,
+                      child: Row(
+                        mainAxisAlignment:
+                            message.messageType == 1
+                                ? MainAxisAlignment.end
+                                : MainAxisAlignment.start,
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          //=====================Avatar===========================
+                          if (message.messageType != 1)
+                            Container(
+                              width: (50 + 10),
+                              child:
+                                  _checkShowAvatar(index, message, messages)
+                                      ? Padding(
+                                        padding: const EdgeInsets.only(
+                                          right: 10,
+                                          bottom: 0,
+                                        ),
+                                        child: StyleConstants.avatarFriend(
+                                          _friend.avatar,
+                                          _friend.isOnline,
+                                        ),
+                                      )
+                                      : const SizedBox.shrink(),
+                            ),
+                          //=====================Content and Time==================
+                          Flexible(
+                            child: Column(
+                              crossAxisAlignment:
+                                  message.messageType == 1
+                                      ? CrossAxisAlignment.end
+                                      : CrossAxisAlignment.start,
+                              children: [
+                                // Content message
+                                if (message.content != null &&
+                                    message.content!.isNotEmpty)
+                                  _buildMessageField(message),
+                                // Images
+                                _buildFileField(message),
+                                //====================Time message======================
+                                if (showTime)
+                                  Padding(
+                                    padding: const EdgeInsets.only(top: 2),
+                                    child: SizedBox(
+                                      child: Align(
+                                        alignment:
+                                            message.messageType == 1
+                                                ? Alignment.centerRight
+                                                : Alignment.centerLeft,
+                                        child: Text(
+                                          DateFormat(
+                                            'h:mm a',
+                                          ).format(message.createdAt),
+                                          style: const TextStyle(
+                                            color: Color.fromRGBO(
+                                              121,
+                                              124,
+                                              123,
+                                              1,
+                                            ),
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w100,
+                                            fontStyle: FontStyle.italic,
+                                          ),
+                                        ),
                                       ),
                                     ),
                                   ),
-                                ),
-                              ),
-                          ],
-                        ),
+                              ],
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   ),
-                ),
-              ),
-            ],
+                ],
+              );
+            },
           );
         },
       ),
@@ -591,59 +616,47 @@ class ChatCustomPage extends State<ChatPage> {
     );
   }
 
-  void _scrollToEnd() {
-    if (_scrollController.hasClients) {
-      _scrollController.animateTo(
-        _scrollController.position.maxScrollExtent,
-        duration: Duration(milliseconds: 300),
-        curve: Curves.easeOutBack,
-      );
-    }
-  }
-
   //==========================handle validation==============================
-  bool _checkTimeTitle(var index, Message message) {
-    if (index > 0) {
-      final prevMessage = _messages[index - 1];
-      final currentDay = DateTime(
-        message.createdAt.year,
-        message.createdAt.month,
-        message.createdAt.day,
-      );
-      final prevDay = DateTime(
-        prevMessage.createdAt.year,
-        prevMessage.createdAt.month,
-        prevMessage.createdAt.day,
-      );
-      if (currentDay.isAtSameMomentAs(prevDay)) {
-        return false;
-      }
-    }
-    return true;
+  bool _checkTimeTitle(var index, Message message, List<Message> messages) {
+    if (index == messages.length - 1) return true;
+
+    final nextMessage = messages[index + 1];
+    final currentDay = DateTime(
+      message.createdAt.year,
+      message.createdAt.month,
+      message.createdAt.day,
+    );
+    final nextDay = DateTime(
+      nextMessage.createdAt.year,
+      nextMessage.createdAt.month,
+      nextMessage.createdAt.day,
+    );
+
+    return !currentDay.isAtSameMomentAs(nextDay);
   }
 
-  bool _checkShowTime(var index, Message message) {
-    if (index < _messages.length - 1) {
-      final nextMessage = _messages[index + 1];
-      final currentTime = DateTime(
-        message.createdAt.year,
-        message.createdAt.month,
-        message.createdAt.day,
-        message.createdAt.hour,
-        message.createdAt.minute,
-      );
-      final nextTime = DateTime(
-        nextMessage.createdAt.year,
-        nextMessage.createdAt.month,
-        nextMessage.createdAt.day,
-        nextMessage.createdAt.hour,
-        nextMessage.createdAt.minute,
-      );
-      if (currentTime == nextTime &&
-          message.messageType == nextMessage.messageType) {
-        return false;
-      }
+  bool _checkShowTime(var index, Message message, List<Message> messages) {
+    if (index >= messages.length - 1) return true;
+    final oldMessage = messages[index + 1];
+    final currentTime = DateTime(
+      message.createdAt.year,
+      message.createdAt.month,
+      message.createdAt.day,
+      message.createdAt.hour,
+      message.createdAt.minute,
+    );
+    final oldTime = DateTime(
+      oldMessage.createdAt.year,
+      oldMessage.createdAt.month,
+      oldMessage.createdAt.day,
+      oldMessage.createdAt.hour,
+      oldMessage.createdAt.minute,
+    );
+    if (currentTime == oldTime &&
+        message.messageType == oldMessage.messageType) {
+      return false;
     }
+
     return true;
   }
 
@@ -660,21 +673,18 @@ class ChatCustomPage extends State<ChatPage> {
     return false;
   }
 
-  bool _checkShowAvatar(int index) {
-    if (index == 0) return true;
-    final prevMessage = _messages[index - 1];
-    final curMessage = _messages[index];
-    if (curMessage.messageType == prevMessage.messageType &&
-        curMessage.createdAt.difference(prevMessage.createdAt).inMinutes < 2 &&
-        !_checkTimeTitle(index, curMessage)) {
-      return false;
-    }
-    return true;
-  }
+  bool _checkShowAvatar(int index, Message message, List<Message> messages) {
+    if (message.messageType == 1) return false;
+    if (index >= messages.length - 1) return true;
 
-  void _startPoll() {
-    _pollTimer = Timer.periodic(const Duration(seconds: 3), (timer) async {
-      await _checkNewMessage();
-    });
+    final olderMessage = messages[index + 1];
+    final isDifferentDay = _checkTimeTitle(index, message, messages);
+
+    if (isDifferentDay) return true;
+    if (olderMessage.messageType != message.messageType ||
+        message.createdAt.difference(olderMessage.createdAt).inMinutes > 2) {
+      return true;
+    }
+    return false;
   }
 }

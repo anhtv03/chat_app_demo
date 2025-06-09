@@ -1,13 +1,29 @@
 import 'package:chat_app_demo/models/file_data.dart';
 import 'package:intl/intl.dart';
+import 'package:hive/hive.dart';
+part 'message.g.dart';
 
+@HiveType(typeId: 1)
 class Message {
+  @HiveField(0)
   final String id;
+
+  @HiveField(1)
   final String? content;
+
+  @HiveField(2)
   final List<FileData> files;
+
+  @HiveField(3)
   final List<FileData> images;
+
+  @HiveField(4)
   final int isSend;
+
+  @HiveField(5)
   final DateTime createdAt;
+
+  @HiveField(6)
   final int messageType;
 
   Message({
