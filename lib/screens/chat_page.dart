@@ -108,7 +108,7 @@ class ChatCustomPage extends State<ChatPage> {
       images: [],
       files: [],
       messageType: 1,
-      createdAt: DateTime.now(),
+      createdAt: DateTime.now().toUtc(),
       isSend: 0,
     );
     await _messageBox.put(tempId, tempMessage);
@@ -257,6 +257,7 @@ class ChatCustomPage extends State<ChatPage> {
 
               bool showDateHeader = _checkTimeTitle(index, message, messages);
               bool showTime = _checkShowTime(index, message, messages);
+              final bool isLastMsg = index == 0;
 
               return Column(
                 children: [
@@ -359,6 +360,17 @@ class ChatCustomPage extends State<ChatPage> {
                       ),
                     ),
                   ),
+                  if (isLastMsg && message.messageType == 1)
+                    Padding(
+                      padding: const EdgeInsets.only(right: 10, top: 2),
+                      child: Align(
+                        alignment: Alignment.centerRight,
+                        child: Text(
+                          message.getStatusIsSend(message.isSend),
+                          style: TextStyle(color: Color(0xFF4FC3F7), fontSize: 12),
+                        ),
+                      ),
+                    ),
                 ],
               );
             },

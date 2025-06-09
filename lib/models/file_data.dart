@@ -1,5 +1,5 @@
 import 'package:hive/hive.dart';
-part 'file_data.g.dart';
+part 'hive_models/file_data.g.dart';
 
 @HiveType(typeId: 2)
 class FileData {

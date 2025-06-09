@@ -6,6 +6,7 @@ import 'package:chat_app_demo/services/token_service.dart';
 import 'package:chat_app_demo/services/user_service.dart';
 import 'package:chat_app_demo/services/message_service.dart';
 import 'package:chat_app_demo/models/friend.dart';
+import 'package:hive_flutter/hive_flutter.dart';
 
 class HomePage extends StatefulWidget {
   const HomePage({super.key});
@@ -16,7 +17,7 @@ class HomePage extends StatefulWidget {
 
 class HomeCustomPage extends State<HomePage> {
   String? _avatar;
-  List<Friend> _friends = [];
+  late Future<void> _initFriend;
   List<Friend> _filteredFriends = [];
   final TextEditingController _searchController = TextEditingController();
 
@@ -24,7 +25,7 @@ class HomeCustomPage extends State<HomePage> {
   void initState() {
     super.initState();
     _handleInfo();
-    _getFriends();
+    _initFriend = _initFriends();
     _searchController.addListener(_onSearchFriends);
   }
 
@@ -51,7 +52,20 @@ class HomeCustomPage extends State<HomePage> {
               _searchTextField(),
               _buildListFriendTitle(),
 
-              Expanded(child: _buildListFriend(screenHeight)),
+              Expanded(
+                child: FutureBuilder(
+                  future: _initFriend,
+                  builder: (context, snapshot) {
+                    if (snapshot.connectionState == ConnectionState.waiting) {
+                      return const Center(child: CircularProgressIndicator());
+                    }
+                    if (snapshot.hasError) {
+                      return const Center(child: Text("Lỗi khởi tạo dữ liệu."));
+                    }
+                    return _buildListFriend(screenHeight);
+                  },
+                ),
+              ),
             ],
           ),
         ),
@@ -91,6 +105,11 @@ class HomeCustomPage extends State<HomePage> {
   }
 
   //==========================handle logic==============================
+  Future<void> _initFriends() async {
+    await Hive.openBox<Friend>('friends');
+    await _getFriends();
+  }
+
   Future<void> _handleInfo() async {
     try {
       String token = await TokenService.getToken('user') as String;
@@ -107,10 +126,13 @@ class HomeCustomPage extends State<HomePage> {
     try {
       String token = await TokenService.getToken('user') as String;
       var result = await MessageService.getFriends(token);
-      setState(() {
-        _friends = result.data;
-        _filteredFriends = _friends;
-      });
+      final friendBox = Hive.box<Friend>("friends");
+
+      Map<String, Friend> friendsMap = {
+        for (var item in result.data) item.friendID: item,
+      };
+
+      await friendBox.putAll(friendsMap);
     } catch (e) {
       print(e.toString());
     }
@@ -126,17 +148,7 @@ class HomeCustomPage extends State<HomePage> {
   }
 
   void _onSearchFriends() {
-    final query = _searchController.text.toLowerCase();
-    setState(() {
-      if (query.isEmpty) {
-        _filteredFriends = _friends;
-      } else {
-        _filteredFriends =
-            _friends.where((friend) {
-              return friend.fullName.toLowerCase().contains(query);
-            }).toList();
-      }
-    });
+    setState(() {});
   }
 
   //==========build UI====================
@@ -178,30 +190,48 @@ class HomeCustomPage extends State<HomePage> {
   }
 
   Widget _buildListFriend(double screenHeight) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
-      child: CustomScrollView(
-        slivers: [
-          SliverToBoxAdapter(child: SizedBox(height: screenHeight * 0.02)),
-          SliverList.builder(
-            itemCount: _filteredFriends.length,
-            itemBuilder: (BuildContext context, int index) {
-              final friend = _filteredFriends[index];
-              return GestureDetector(
-                onTap: () {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) => ChatPage(friend: friend),
-                    ),
+    return ValueListenableBuilder(
+      valueListenable: Hive.box<Friend>('friends').listenable(),
+
+      builder: (context, box, _) {
+        List<Friend> allFriends = box.values.toList();
+        final query = _searchController.text.toLowerCase();
+
+        if (query.isEmpty) {
+          _filteredFriends = allFriends;
+        } else {
+          _filteredFriends =
+              allFriends.where((friend) {
+                return friend.fullName.toLowerCase().contains(query);
+              }).toList();
+        }
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 20),
+          child: CustomScrollView(
+            slivers: [
+              SliverToBoxAdapter(child: SizedBox(height: screenHeight * 0.02)),
+              SliverList.builder(
+                itemCount: _filteredFriends.length,
+                itemBuilder: (BuildContext context, int index) {
+                  final friend = _filteredFriends[index];
+                  return GestureDetector(
+                    onTap: () {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) => ChatPage(friend: friend),
+                        ),
+                      );
+                    },
+                    child: _buildDetailFriend(friend),
                   );
                 },
-                child: _buildDetailFriend(friend),
-              );
-            },
+              ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -212,19 +242,46 @@ class HomeCustomPage extends State<HomePage> {
         mainAxisAlignment: MainAxisAlignment.start,
         children: [
           StyleConstants.avatarFriend(friend.avatar, friend.isOnline),
-          Flexible(
-            child: Padding(
-              padding: const EdgeInsets.only(left: 40),
-              child: Text(
-                friend.fullName,
-                style: StyleConstants.textTitleListUser,
-                overflow: TextOverflow.ellipsis,
-                maxLines: 1,
-              ),
+          SizedBox(width: 20),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  friend.fullName,
+                  style: StyleConstants.textTitleListUser,
+                  overflow: TextOverflow.ellipsis,
+                  maxLines: 1,
+                ),
+                SizedBox(height: 4),
+                _buildLastMessagePreview(friend),
+              ],
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildLastMessagePreview(Friend friend) {
+    if (friend.lastMessage == null || friend.lastMessage!.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    String displayText;
+    if (friend.lastMessage == '[image]') {
+      displayText = 'Đã gửi một ảnh';
+    } else if (friend.lastMessage == '[file]') {
+      displayText = 'Đã gửi một tệp đính kèm';
+    } else {
+      displayText = friend.lastMessage!;
+    }
+
+    return Text(
+      displayText,
+      style: StyleConstants.textMessagePreview,
+      overflow: TextOverflow.ellipsis,
+      maxLines: 1,
     );
   }
 }

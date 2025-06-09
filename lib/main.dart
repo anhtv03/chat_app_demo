@@ -4,6 +4,7 @@ import 'package:chat_app_demo/screens/home_page.dart';
 import 'package:chat_app_demo/services/token_service.dart';
 import 'package:chat_app_demo/models/message.dart';
 import 'package:chat_app_demo/models/file_data.dart';
+import 'package:chat_app_demo/models/friend.dart';
 import 'package:hive_flutter/hive_flutter.dart';
 
 Future<void> main()  async {
@@ -11,6 +12,7 @@ Future<void> main()  async {
   await Hive.initFlutter();
   Hive.registerAdapter(MessageAdapter());
   Hive.registerAdapter(FileDataAdapter());
+  Hive.registerAdapter(FriendAdapter());
 
   runApp(const MyApp());
 }

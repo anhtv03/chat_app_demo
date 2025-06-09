@@ -1,7 +1,8 @@
 import 'package:chat_app_demo/models/file_data.dart';
 import 'package:intl/intl.dart';
 import 'package:hive/hive.dart';
-part 'message.g.dart';
+
+part 'hive_models/message.g.dart';
 
 @HiveType(typeId: 1)
 class Message {
@@ -66,6 +67,17 @@ class Message {
       return 'Hôm qua';
     } else {
       return DateFormat('dd/MM/yyyy').format(createdAt);
+    }
+  }
+
+  String getStatusIsSend(int isSend) {
+    switch (isSend) {
+      case 0:
+        return "đã gửi";
+      case 1:
+        return "đã đọc";
+      default:
+        return "";
     }
   }
 }

@@ -96,6 +96,13 @@ class StyleConstants {
     height: 1,
   );
 
+  static const textMessagePreview = TextStyle(
+    color: Colors.grey,
+    fontSize: 14,
+    fontWeight: FontWeight.w400,
+    fontStyle: FontStyle.italic
+  );
+
   static ButtonStyle loginButtonStyle = ElevatedButton.styleFrom(
     backgroundColor: Color.fromRGBO(103, 131, 231, 1),
     foregroundColor: Colors.white,
